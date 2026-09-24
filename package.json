@@ -14,6 +14,7 @@
   "scripts": {
     "server": "npm run dev --workspace @vinny-editor/server",
     "web": "npm run dev --workspace @vinny-editor/web",
+    "tunnel": "bash scripts/tunnel.sh",
     "build": "npm run build --workspace @vinny-editor/shared && npm run build --workspace @vinny-editor/server && npm run build --workspace @vinny-editor/web",
     "typecheck": "npm run build --workspace @vinny-editor/shared && npm run typecheck --workspace @vinny-editor/server && npm run typecheck --workspace @vinny-editor/web",
     "lint": "eslint .",

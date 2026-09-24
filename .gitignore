@@ -9,3 +9,6 @@ build/
 *.sqlite-journal
 .vite/
 *.tsbuildinfo
+.test-workspace/
+workspace/
+data/

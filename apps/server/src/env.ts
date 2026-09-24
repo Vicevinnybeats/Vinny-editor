@@ -2,6 +2,7 @@ import "dotenv/config";
 import { z } from "zod";
 
 const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   SERVER_PORT: z.coerce.number().int().positive().default(4310),
   DATABASE_PATH: z.string().default("./data/vinny-editor.sqlite"),
   WORKSPACE_ROOT: z.string().default("./workspace"),
