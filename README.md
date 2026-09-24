@@ -47,7 +47,7 @@ means asking for a fresh snapshot.
 ## Getting started
 
 ```bash
-npm install
+npm install       # also builds packages/shared via postinstall - required before the server can run
 cp .env.example .env
 # edit .env: set AUTH_PASSPHRASE and SESSION_SECRET to something real
 

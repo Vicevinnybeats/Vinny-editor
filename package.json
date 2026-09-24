@@ -12,6 +12,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "postinstall": "npm run build --workspace @vinny-editor/shared",
     "server": "npm run dev --workspace @vinny-editor/server",
     "web": "npm run dev --workspace @vinny-editor/web",
     "tunnel": "bash scripts/tunnel.sh",
