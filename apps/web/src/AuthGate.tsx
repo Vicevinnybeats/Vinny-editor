@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { authApi } from "./api";
+import { ApiError, authApi } from "./api";
 
 type AuthState = "checking" | "authed" | "unauthed";
 
@@ -23,8 +23,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
     try {
       await authApi.login(passphrase);
       setState("authed");
-    } catch {
-      setError("Incorrect passphrase.");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError("Incorrect passphrase.");
+      } else {
+        setError("Can't reach the server - make sure `npm run server` is running.");
+      }
     } finally {
       setSubmitting(false);
     }
