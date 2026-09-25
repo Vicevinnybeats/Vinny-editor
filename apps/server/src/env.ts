@@ -10,17 +10,7 @@ import { z } from "zod";
 // three directories below the repo root).
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
-const envFilePath = resolve(REPO_ROOT, ".env");
-const dotenvResult = dotenv.config({ path: envFilePath });
-// TEMPORARY debug line - remove after diagnosing the login issue.
-console.log(
-  "DEBUG .env path tried:",
-  envFilePath,
-  "| result:",
-  dotenvResult.error ? `ERROR: ${dotenvResult.error.message}` : "loaded ok",
-  "| keys found:",
-  dotenvResult.parsed ? Object.keys(dotenvResult.parsed) : null,
-);
+dotenv.config({ path: resolve(REPO_ROOT, ".env") });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),

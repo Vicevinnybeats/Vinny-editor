@@ -59,6 +59,12 @@ Open the URL Vite prints (defaults to `http://localhost:4173`). You'll be
 asked for the passphrase you set in `.env` - the editor gives a real
 terminal and file access, so it's never left open.
 
+> `.env` is git-ignored on purpose (it holds your passphrase and session
+> secret) - which also means `git pull` never restores it. If the login
+> screen keeps rejecting a passphrase you're sure is right, check the file
+> actually still exists (`dir .env` / `ls .env`) before anything else; if
+> it doesn't, `cp .env.example .env` and set your values again.
+
 ### Production (single process)
 
 ```bash
