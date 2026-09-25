@@ -9,6 +9,7 @@ export function ChatPanel() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const isStreaming = sending || chatMessages.some((m) => m.pending);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
@@ -30,6 +31,7 @@ export function ChatPanel() {
   return (
     <div className="chat-panel">
       <div className="panel-title">Chat</div>
+      <div className="chat-progress">{isStreaming && <div className="chat-progress-bar" />}</div>
       <div className="chat-messages" ref={listRef}>
         {chatMessages.length === 0 && <p className="muted">Ask Vinny about your code.</p>}
         {chatMessages.map((message) => {

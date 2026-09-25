@@ -151,7 +151,7 @@ textarea {
 .body {
   flex: 1;
   display: grid;
-  grid-template-columns: 220px 1fr 340px;
+  grid-template-columns: 220px 1fr 460px;
   min-height: 0;
 }
 
@@ -306,14 +306,40 @@ textarea {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  background: var(--bg);
+}
+.chat-progress {
+  height: 3px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.chat-progress-bar {
+  height: 100%;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: chat-progress-slide 1.3s ease-in-out infinite;
+}
+@keyframes chat-progress-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
 }
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 0 12px;
+  padding: 0 16px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 12px;
+}
+.chat-messages > * {
+  width: 100%;
+  max-width: 760px;
 }
 .chat-message {
   border-radius: var(--radius);
@@ -336,8 +362,12 @@ textarea {
 .chat-input-row {
   display: flex;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 14px 16px;
   border-top: 1px solid var(--border);
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 .chat-input-row textarea {
   flex: 1;

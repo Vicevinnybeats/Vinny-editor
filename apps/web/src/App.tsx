@@ -9,20 +9,21 @@ import { SearchPanel } from "./components/SearchPanel";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { TerminalPanel } from "./components/TerminalPanel";
 
-type RightTab = "chat" | "git" | "search" | "settings";
-type MobileView = "files" | "editor" | "panel";
+type RightTab = "editor" | "git" | "search" | "settings";
+type MobileView = "files" | "chat" | "panel";
 
 export function App() {
   const { status, tabs } = useConnection();
   const [activePath, setActivePath] = useState<string | null>(null);
-  const [rightTab, setRightTab] = useState<RightTab>("chat");
-  const [mobileView, setMobileView] = useState<MobileView>("editor");
+  const [rightTab, setRightTab] = useState<RightTab>("editor");
+  const [mobileView, setMobileView] = useState<MobileView>("chat");
   const [terminalOpen, setTerminalOpen] = useState(false);
 
   async function openFile(path: string) {
     await tabsApi.open(path);
     setActivePath(path);
-    setMobileView("editor");
+    setRightTab("editor");
+    setMobileView("panel");
   }
 
   async function closeTab(path: string) {
@@ -34,8 +35,13 @@ export function App() {
   }
 
   const rightPanel =
-    rightTab === "chat" ? (
-      <ChatPanel />
+    rightTab === "editor" ? (
+      <EditorPanel
+        tabs={tabs}
+        activePath={activePath}
+        onSelectTab={setActivePath}
+        onCloseTab={closeTab}
+      />
     ) : rightTab === "git" ? (
       <GitPanel />
     ) : rightTab === "search" ? (
@@ -63,13 +69,13 @@ export function App() {
       </header>
 
       <nav className="mobile-tabs">
-        {(["files", "editor", "panel"] as MobileView[]).map((view) => (
+        {(["files", "chat", "panel"] as MobileView[]).map((view) => (
           <button
             key={view}
             className={`mobile-tab${mobileView === view ? " mobile-tab-active" : ""}`}
             onClick={() => setMobileView(view)}
           >
-            {view === "files" ? "Files" : view === "editor" ? "Editor" : "Panel"}
+            {view === "files" ? "Files" : view === "chat" ? "Chat" : "Editor"}
           </button>
         ))}
       </nav>
@@ -79,18 +85,13 @@ export function App() {
           <Explorer onOpenFile={openFile} />
         </aside>
 
-        <main className={`main${mobileView === "editor" ? " mobile-visible" : ""}`}>
-          <EditorPanel
-            tabs={tabs}
-            activePath={activePath}
-            onSelectTab={setActivePath}
-            onCloseTab={closeTab}
-          />
+        <main className={`main${mobileView === "chat" ? " mobile-visible" : ""}`}>
+          <ChatPanel />
         </main>
 
         <aside className={`right-dock${mobileView === "panel" ? " mobile-visible" : ""}`}>
           <div className="right-dock-tabs">
-            {(["chat", "git", "search", "settings"] as RightTab[]).map((tab) => (
+            {(["editor", "git", "search", "settings"] as RightTab[]).map((tab) => (
               <button
                 key={tab}
                 className={`dock-tab${rightTab === tab ? " dock-tab-active" : ""}`}
