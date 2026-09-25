@@ -14,17 +14,28 @@ function appendToBuffer(data: string) {
   }
 }
 
-function ensureTerminal(): pty.IPty {
+function defaultShell(): string {
+  if (process.platform === "win32") {
+    return process.env.COMSPEC ?? "powershell.exe";
+  }
+  return process.env.SHELL ?? "/bin/bash";
+}
+
+function ensureTerminal(): pty.IPty | null {
   if (ptyProcess) return ptyProcess;
 
-  const shell = process.env.SHELL ?? "/bin/bash";
-  ptyProcess = pty.spawn(shell, [], {
-    name: "xterm-color",
-    cols: 80,
-    rows: 24,
-    cwd: WORKSPACE_ROOT,
-    env: process.env as Record<string, string>,
-  });
+  try {
+    ptyProcess = pty.spawn(defaultShell(), [], {
+      name: "xterm-color",
+      cols: 80,
+      rows: 24,
+      cwd: WORKSPACE_ROOT,
+      env: process.env as Record<string, string>,
+    });
+  } catch (err) {
+    console.error("Failed to start terminal shell:", err instanceof Error ? err.message : err);
+    return null;
+  }
 
   ptyProcess.onData((data) => {
     appendToBuffer(data);
@@ -43,11 +54,11 @@ export function getTerminalBuffer(): string {
 }
 
 export function writeTerminalInput(data: string): void {
-  ensureTerminal().write(data);
+  ensureTerminal()?.write(data);
 }
 
 export function resizeTerminal(cols: number, rows: number): void {
-  ensureTerminal().resize(cols, rows);
+  ensureTerminal()?.resize(cols, rows);
 }
 
 /** Called on first client connect so a shell exists even before anyone types. */
