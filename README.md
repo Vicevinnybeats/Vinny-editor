@@ -91,6 +91,20 @@ This runs `cloudflared tunnel --url http://localhost:4310` (or whatever
 URLs rotate every time you start one, grab the URL from whichever device you
 started it on - the Settings panel doesn't (yet) surface it automatically.
 
+### Windows one-click start
+
+`npm run tunnel` is a bash script and won't run in plain Windows `cmd`. On
+Windows, use `start-windows.bat` at the repo root instead:
+
+1. Download `cloudflared.exe` for Windows from the
+   [cloudflared releases page](https://github.com/cloudflare/cloudflared/releases/latest)
+   and place it directly in the repo root, next to `start-windows.bat`.
+2. Double-click `start-windows.bat`. It builds the app, starts the server in
+   its own window, waits a few seconds, then starts the tunnel in another
+   window and prints the public URL there.
+
+Both windows need to stay open while you're using it remotely.
+
 ## Security notes
 
 - The server is sandboxed to `WORKSPACE_ROOT`; every filesystem path is
