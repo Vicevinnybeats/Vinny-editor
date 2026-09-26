@@ -15,6 +15,7 @@ import { gitRoutes } from "./routes/git.js";
 import { searchRoutes } from "./routes/search.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { chatRoutes } from "./routes/chat.js";
+import { execRoutes } from "./routes/exec.js";
 import { registerSocket } from "./ws-hub.js";
 import {
   getTerminalBuffer,
@@ -50,6 +51,7 @@ export function buildServer() {
       instance.register(searchRoutes, { prefix: "/search" });
       instance.register(settingsRoutes, { prefix: "/settings" });
       instance.register(chatRoutes, { prefix: "/chat" });
+      instance.register(execRoutes, { prefix: "/exec" });
     },
     { prefix: "/api" },
   );

@@ -10,17 +10,34 @@ interface ExplorerProps {
 export function Explorer({ onOpenFile }: ExplorerProps) {
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const { subscribeFsChange } = useConnection();
+
+  function refresh() {
+    return fsApi.tree("").then((res) => setEntries(res.entries));
+  }
 
   useEffect(() => {
-    fsApi
-      .tree("")
-      .then((res) => setEntries(res.entries))
-      .finally(() => setLoading(false));
+    refresh().finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => subscribeFsChange(() => void refresh()), [subscribeFsChange]);
+
+  async function handleNewFile() {
+    const path = window.prompt("New file path (e.g. src/new.ts):")?.trim();
+    if (!path) return;
+    await fsApi.write(path, "");
+    await refresh();
+    onOpenFile(path);
+  }
 
   return (
     <div className="explorer">
-      <div className="panel-title">Explorer</div>
+      <div className="panel-title-row">
+        <div className="panel-title">Explorer</div>
+        <button className="btn btn-small btn-icon" onClick={handleNewFile} title="New file">
+          +
+        </button>
+      </div>
       {loading ? (
         <p className="muted">Loading...</p>
       ) : entries.length === 0 ? (

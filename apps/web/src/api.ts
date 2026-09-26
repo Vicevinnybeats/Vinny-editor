@@ -100,3 +100,15 @@ export const chatApi = {
       body: JSON.stringify({ content }),
     }),
 };
+
+export interface CommandResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  timedOut: boolean;
+}
+
+export const execApi = {
+  run: (command: string) =>
+    request<CommandResult>("/exec/run", { method: "POST", body: JSON.stringify({ command }) }),
+};

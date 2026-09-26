@@ -34,3 +34,27 @@ export function parseProposedEdits(content: string): ProposedEdit[] {
   }
   return edits;
 }
+
+/**
+ * The assistant proposes shell commands the same way, with a fenced block:
+ *
+ *   ```vinny-run
+ *   npm test
+ *   ```
+ *
+ * Same rule as edits: the client shows it and requires explicit approval
+ * before it actually runs - the model proposing a command never executes it.
+ */
+export const RUN_BLOCK_PATTERN = /```vinny-run\n([\s\S]*?)\n```/g;
+
+export interface ProposedCommand {
+  command: string;
+}
+
+export function parseProposedCommands(content: string): ProposedCommand[] {
+  const commands: ProposedCommand[] = [];
+  for (const match of content.matchAll(RUN_BLOCK_PATTERN)) {
+    commands.push({ command: match[1].trim() });
+  }
+  return commands;
+}

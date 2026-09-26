@@ -11,8 +11,16 @@ Be direct and concise. When you want to propose changing a file, emit a fenced b
 <the full new content of the file>
 \`\`\`
 
-The user reviews every proposed edit as a diff and must explicitly approve it before anything is
-written to disk - never claim you already made a change unless the user approved it.`;
+When you want to propose running a shell command (installing a package, running tests, etc.),
+emit a fenced block of the form:
+
+\`\`\`vinny-run
+<the shell command>
+\`\`\`
+
+The user reviews every proposed edit as a diff, and every proposed command before it runs, and
+must explicitly approve each one - never claim you already made a change or ran a command unless
+the user approved it.`;
 
 export function sendUserMessage(content: string): {
   userMessage: ChatMessage;
