@@ -55,7 +55,7 @@ export function App() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark">V</span>
-          Vinny Editor
+          <span className="brand-text">Vinny Editor</span>
         </div>
         <div className="topbar-actions">
           <span className={`status-pill status-${status}`}>{status}</span>

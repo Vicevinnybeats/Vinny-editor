@@ -41,8 +41,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (state === "unauthed") {
     return (
       <div className="auth-screen">
+        <div className="auth-badge">
+          <span className="status-dot" />
+          Running locally on your own hardware
+        </div>
+        <span className="auth-logo" />
+        <h1 className="brand-text auth-title">Vinny Editor</h1>
         <form className="auth-form" onSubmit={handleSubmit}>
-          <h1>Vinny Editor</h1>
           <p>Enter the passphrase to continue.</p>
           <input
             type="password"
@@ -52,7 +57,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
             placeholder="Passphrase"
           />
           {error && <p className="auth-error">{error}</p>}
-          <button type="submit" disabled={submitting || !passphrase}>
+          <button
+            className="btn btn-primary auth-submit"
+            type="submit"
+            disabled={submitting || !passphrase}
+          >
             {submitting ? "Checking..." : "Unlock"}
           </button>
         </form>

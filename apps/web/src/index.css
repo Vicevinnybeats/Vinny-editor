@@ -10,10 +10,11 @@
   --accent: #22d3ee;
   --accent-hover: #06b6d4;
   --accent-soft: rgba(34, 211, 238, 0.14);
+  --accent-purple: #a78bfa;
   --accent-warm: #fb923c;
   --danger: #f87171;
   --ok: #34d399;
-  --radius: 8px;
+  --radius: 10px;
   --glow: 0 0 16px rgba(34, 211, 238, 0.35);
 }
 
@@ -29,7 +30,9 @@ body,
 
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 15% -10%, rgba(34, 211, 238, 0.08), transparent 40%),
+    radial-gradient(circle at 100% 0%, rgba(167, 139, 250, 0.07), transparent 35%), var(--bg);
   color: var(--text);
   font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
   font-size: 14px;
@@ -129,22 +132,31 @@ textarea {
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 600;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 15px;
 }
 
 .brand-mark {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-warm));
+  width: 26px;
+  height: 26px;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
   color: #04141a;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   box-shadow: var(--glow);
+  flex-shrink: 0;
+}
+
+.brand-text {
+  background: linear-gradient(90deg, var(--accent), var(--accent-purple));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .topbar-actions {
@@ -669,21 +681,71 @@ textarea {
 .auth-screen {
   height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  text-align: center;
+}
+.auth-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok);
+  flex-shrink: 0;
+}
+.auth-logo {
+  width: 56px;
+  height: 56px;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+  box-shadow: var(--glow);
+}
+.auth-title {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.02em;
 }
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  width: 280px;
+  gap: 12px;
+  width: 300px;
+}
+.auth-form p {
+  margin: 0 0 4px;
+  color: var(--text-muted);
 }
 .auth-form input {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
-  padding: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+}
+.auth-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.auth-submit {
+  padding: 12px 14px;
+  font-size: 14px;
+  border-radius: var(--radius);
 }
 .auth-error {
   color: var(--danger);
