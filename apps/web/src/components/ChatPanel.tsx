@@ -5,10 +5,9 @@ import {
   parseProposedCommands,
   parseProposedEdits,
 } from "@vinny-editor/shared";
-import { chatApi } from "../api";
+import { chatApi, fsApi } from "../api";
 import { useConnection } from "../connection";
-import { CommandApproval } from "./CommandApproval";
-import { DiffApproval } from "./DiffApproval";
+import { FileAttachMenu } from "./FileAttachMenu";
 
 function useElapsedSeconds(active: boolean): number {
   const [seconds, setSeconds] = useState(0);
@@ -64,23 +63,43 @@ function useStickToBottom(containerRef: RefObject<HTMLDivElement | null>) {
   return innerRef;
 }
 
-export function ChatPanel() {
+export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
   const { chatMessages } = useConnection();
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<string[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const innerRef = useStickToBottom(listRef);
   const isStreaming = sending || chatMessages.some((m) => m.pending);
   const elapsed = useElapsedSeconds(isStreaming);
 
+  function attachFile(path: string) {
+    setAttachedFiles((prev) => (prev.includes(path) ? prev : [...prev, path]));
+    setPickerOpen(false);
+  }
+
+  function removeAttachment(path: string) {
+    setAttachedFiles((prev) => prev.filter((p) => p !== path));
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!draft.trim() || sending) return;
+    if ((!draft.trim() && attachedFiles.length === 0) || sending) return;
     setSending(true);
     const content = draft;
+    const files = attachedFiles;
     setDraft("");
+    setAttachedFiles([]);
     try {
-      await chatApi.send(content);
+      const attachments = await Promise.all(
+        files.map(async (path) => {
+          const { content: fileContent } = await fsApi.file(path);
+          return `Attached: ${path}\n\`\`\`\n${fileContent}\n\`\`\``;
+        }),
+      );
+      const fullContent = [...attachments, content].filter(Boolean).join("\n\n");
+      await chatApi.send(fullContent);
     } finally {
       setSending(false);
     }
@@ -92,7 +111,7 @@ export function ChatPanel() {
       <div className="chat-progress">{isStreaming && <div className="chat-progress-bar" />}</div>
       {isStreaming && (
         <div className="chat-status">
-          <span className="spinner" />
+          <span className="thinking-dot" />
           Generating... {elapsed}s
         </div>
       )}
@@ -113,37 +132,82 @@ export function ChatPanel() {
                 {text && <div className="chat-message-body">{text}</div>}
                 {message.pending && !text && (
                   <div className="chat-message-body muted">
-                    <span className="spinner" /> Thinking...
+                    <span className="thinking-dot" /> Thinking...
                   </div>
                 )}
-                {edits.map((edit) => (
-                  <DiffApproval key={edit.path} edit={edit} />
-                ))}
-                {commands.map((command, i) => (
-                  <CommandApproval key={`${command.command}-${i}`} command={command} />
-                ))}
+                {(edits.length > 0 || commands.length > 0) && (
+                  <button className="action-summary" onClick={onViewChanges}>
+                    {edits.map((edit) => (
+                      <span key={edit.path} className="action-summary-item">
+                        <span className="action-summary-verb">Edited</span>
+                        <span className="action-summary-path">{edit.path}</span>
+                      </span>
+                    ))}
+                    {commands.map((command, i) => (
+                      <span key={i} className="action-summary-item">
+                        <span className="action-summary-verb">Ran</span>
+                        <code className="action-summary-path">{command.command}</code>
+                      </span>
+                    ))}
+                    <span className="action-summary-link">View in Changes ›</span>
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
       </div>
-      <form className="chat-input-row" onSubmit={handleSubmit}>
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Message Vinny..."
-          rows={2}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit(e);
-            }
-          }}
-        />
-        <button className="btn btn-primary" type="submit" disabled={!draft.trim() || sending}>
-          Send
-        </button>
-      </form>
+      <div className="chat-input-area">
+        {pickerOpen && (
+          <FileAttachMenu onSelect={attachFile} onClose={() => setPickerOpen(false)} />
+        )}
+        {attachedFiles.length > 0 && (
+          <div className="chat-attachments">
+            {attachedFiles.map((path) => (
+              <span key={path} className="chat-attachment-chip">
+                {path}
+                <button
+                  type="button"
+                  className="chat-attachment-remove"
+                  onClick={() => removeAttachment(path)}
+                  aria-label={`Remove ${path}`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <form className="chat-input-row" onSubmit={handleSubmit}>
+          <button
+            type="button"
+            className="btn btn-icon"
+            title="Attach a file"
+            onClick={() => setPickerOpen((v) => !v)}
+          >
+            +
+          </button>
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Message Vinny..."
+            rows={2}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          />
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={(!draft.trim() && attachedFiles.length === 0) || sending}
+          >
+            Send
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

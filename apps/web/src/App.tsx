@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { tabsApi } from "./api";
 import { useConnection } from "./connection";
+import { ChangesPanel } from "./components/ChangesPanel";
 import { ChatPanel } from "./components/ChatPanel";
 import { EditorPanel } from "./components/EditorPanel";
 import { Explorer } from "./components/Explorer";
@@ -9,7 +10,7 @@ import { SearchPanel } from "./components/SearchPanel";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { TerminalPanel } from "./components/TerminalPanel";
 
-type RightTab = "editor" | "git" | "search" | "settings";
+type RightTab = "editor" | "changes" | "git" | "search" | "settings";
 type MobileView = "files" | "chat" | "panel";
 
 export function App() {
@@ -34,6 +35,11 @@ export function App() {
     }
   }
 
+  function viewChanges() {
+    setRightTab("changes");
+    setMobileView("panel");
+  }
+
   const rightPanel =
     rightTab === "editor" ? (
       <EditorPanel
@@ -42,6 +48,8 @@ export function App() {
         onSelectTab={setActivePath}
         onCloseTab={closeTab}
       />
+    ) : rightTab === "changes" ? (
+      <ChangesPanel />
     ) : rightTab === "git" ? (
       <GitPanel />
     ) : rightTab === "search" ? (
@@ -86,12 +94,12 @@ export function App() {
         </aside>
 
         <main className={`main${mobileView === "chat" ? " mobile-visible" : ""}`}>
-          <ChatPanel />
+          <ChatPanel onViewChanges={viewChanges} />
         </main>
 
         <aside className={`right-dock${mobileView === "panel" ? " mobile-visible" : ""}`}>
           <div className="right-dock-tabs">
-            {(["editor", "git", "search", "settings"] as RightTab[]).map((tab) => (
+            {(["editor", "changes", "git", "search", "settings"] as RightTab[]).map((tab) => (
               <button
                 key={tab}
                 className={`dock-tab${rightTab === tab ? " dock-tab-active" : ""}`}
