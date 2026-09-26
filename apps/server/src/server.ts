@@ -36,6 +36,28 @@ export function buildServer() {
 
   if (existsSync(WEB_DIST)) {
     fastify.register(fastifyStatic, { root: WEB_DIST });
+
+    // @fastify/static always sets its own Cache-Control after `setHeaders`
+    // runs, so that option can't be used to override it - an onSend hook
+    // runs last and wins. The HTML shell and the service-worker/manifest
+    // files must never be cached (by the browser or an intermediary like a
+    // Cloudflare Quick Tunnel) - they're how a client discovers a new build
+    // exists. Hashed asset filenames change on every build, so those are
+    // safe to cache aggressively.
+    fastify.addHook("onSend", async (request, reply) => {
+      const url = request.raw.url ?? "";
+      if (
+        url === "/" ||
+        url.endsWith(".html") ||
+        url.endsWith("sw.js") ||
+        url.endsWith("registerSW.js") ||
+        url.endsWith("manifest.webmanifest")
+      ) {
+        reply.header("Cache-Control", "no-store");
+      } else if (url.startsWith("/assets/")) {
+        reply.header("Cache-Control", "public, max-age=31536000, immutable");
+      }
+    });
   }
 
   fastify.get("/health", async () => ({ status: "ok" }));
