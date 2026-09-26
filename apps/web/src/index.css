@@ -57,9 +57,18 @@ textarea {
   border-radius: var(--radius);
   padding: 6px 12px;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
 }
 .btn:hover {
   border-color: var(--accent);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
 }
 .btn:disabled {
   opacity: 0.5;
@@ -74,6 +83,7 @@ textarea {
 }
 .btn-primary:hover {
   background: var(--accent-hover);
+  box-shadow: 0 0 22px rgba(34, 211, 238, 0.5);
 }
 .btn-small {
   padding: 3px 9px;
@@ -171,10 +181,14 @@ textarea {
   border-radius: 999px;
   border: 1px solid var(--border);
   text-transform: capitalize;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 .status-connected {
   color: var(--ok);
   border-color: var(--ok);
+  animation: pulse-glow 2.4s ease-in-out infinite;
 }
 .status-connecting {
   color: var(--text-muted);
@@ -182,6 +196,15 @@ textarea {
 .status-disconnected {
   color: var(--danger);
   border-color: var(--danger);
+}
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(52, 211, 153, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(52, 211, 153, 0.45);
+  }
 }
 
 .body {
@@ -225,6 +248,15 @@ textarea {
   padding: 10px 6px;
   cursor: pointer;
   font-size: 12px;
+  transition:
+    color 0.15s ease,
+    border-bottom-color 0.15s ease;
+}
+.dock-tab:hover {
+  color: var(--text);
+}
+.dock-tab:active {
+  transform: scale(0.97);
 }
 .dock-tab-active {
   color: var(--text);
@@ -237,6 +269,9 @@ textarea {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+}
+.right-dock-body > * {
+  animation: fade-slide-in 0.18s ease;
 }
 
 .mobile-tabs {
@@ -261,6 +296,7 @@ textarea {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: background-color 0.15s ease;
 }
 .tree-row:hover {
   background: var(--accent-soft);
@@ -293,6 +329,7 @@ textarea {
   display: flex;
   align-items: center;
   border-right: 1px solid var(--border);
+  transition: background-color 0.15s ease;
 }
 .tab-active {
   background: var(--bg);
@@ -307,6 +344,10 @@ textarea {
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  transition: color 0.15s ease;
+}
+.tab:not(.tab-active):hover {
+  background: var(--accent-soft);
 }
 .dirty-dot {
   width: 6px;
@@ -406,6 +447,17 @@ textarea {
   padding: 8px 10px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
+  animation: fade-slide-in 0.22s ease;
+}
+@keyframes fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .chat-message-user {
   border-color: var(--accent);
@@ -445,6 +497,10 @@ textarea {
   border-radius: var(--radius);
   overflow: hidden;
   margin-top: 8px;
+  transition: border-color 0.15s ease;
+}
+.action-card:hover {
+  border-color: var(--accent-soft);
 }
 .action-card-header {
   display: flex;
@@ -496,6 +552,7 @@ textarea {
   overflow: auto;
   white-space: pre-wrap;
   border-top: 1px solid var(--border);
+  animation: fade-slide-in 0.18s ease;
 }
 .diff-stat {
   display: flex;
@@ -519,6 +576,7 @@ textarea {
 }
 .diff-editor-wrap {
   border-top: 1px solid var(--border);
+  animation: fade-slide-in 0.18s ease;
 }
 
 /* Git */
@@ -552,6 +610,12 @@ textarea {
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+  border-radius: 6px;
+  padding: 2px 6px;
+  transition: background-color 0.15s ease;
+}
+.git-file-name:hover {
+  background: var(--accent-soft);
 }
 .git-panel ul {
   padding: 0;
@@ -619,9 +683,14 @@ textarea {
   border: none;
   border-bottom: 1px solid var(--border);
   color: var(--text);
-  padding: 6px 0;
+  padding: 6px 8px;
   cursor: pointer;
   text-align: left;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+.search-result:hover {
+  background: var(--accent-soft);
 }
 .search-result-path {
   font-size: 11px;
@@ -662,6 +731,15 @@ textarea {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  animation: slide-up 0.2s ease;
+}
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 .terminal-drawer-header {
   display: flex;
@@ -767,6 +845,7 @@ textarea {
   .mobile-visible {
     display: flex;
     flex-direction: column;
+    animation: fade-slide-in 0.2s ease;
   }
   .mobile-tabs {
     display: flex;
@@ -780,6 +859,9 @@ textarea {
     color: var(--text-muted);
     padding: 10px;
     border-bottom: 2px solid transparent;
+    transition:
+      color 0.15s ease,
+      border-bottom-color 0.15s ease;
   }
   .mobile-tab-active {
     color: var(--text);
@@ -792,5 +874,15 @@ textarea {
     bottom: 0;
     height: 50vh;
     z-index: 10;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }
