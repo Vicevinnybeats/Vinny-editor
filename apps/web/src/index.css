@@ -1,18 +1,20 @@
 :root {
   color-scheme: dark;
-  --bg: #0f1015;
-  --bg-elevated: #171922;
-  --bg-sunken: #0b0c11;
-  --sidebar-bg: #14151d;
-  --border: #24262f;
-  --text: #e7e7f0;
-  --text-muted: #8a8da3;
-  --accent: #7c6cf6;
-  --accent-hover: #6c5ce8;
-  --accent-soft: rgba(124, 108, 246, 0.14);
-  --danger: #f36a6a;
-  --ok: #4fd18b;
+  --bg: #05070c;
+  --bg-elevated: #0d1420;
+  --bg-sunken: #030509;
+  --sidebar-bg: #090e18;
+  --border: #1b2536;
+  --text: #e6f2f7;
+  --text-muted: #7d90a8;
+  --accent: #22d3ee;
+  --accent-hover: #06b6d4;
+  --accent-soft: rgba(34, 211, 238, 0.14);
+  --accent-warm: #fb923c;
+  --danger: #f87171;
+  --ok: #34d399;
   --radius: 8px;
+  --glow: 0 0 16px rgba(34, 211, 238, 0.35);
 }
 
 * {
@@ -63,7 +65,9 @@ textarea {
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: #04141a;
+  font-weight: 600;
+  box-shadow: var(--glow);
 }
 .btn-primary:hover {
   background: var(--accent-hover);
@@ -133,13 +137,14 @@ textarea {
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  background: var(--accent);
-  color: white;
+  background: linear-gradient(135deg, var(--accent), var(--accent-warm));
+  color: #04141a;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
+  box-shadow: var(--glow);
 }
 
 .topbar-actions {
