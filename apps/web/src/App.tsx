@@ -20,6 +20,7 @@ export function App() {
   const [rightTab, setRightTab] = useState<RightTab>("editor");
   const [mobileView, setMobileView] = useState<MobileView>("chat");
   const [terminalOpen, setTerminalOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // A project switch points the server at a different folder, so any
   // previously open tab's path no longer means anything.
@@ -74,6 +75,13 @@ export function App() {
         </div>
         <div className="topbar-actions">
           <ProjectSwitcher />
+          <button
+            className={`btn btn-small${sidebarOpen ? " btn-active" : ""}`}
+            onClick={() => setSidebarOpen((v) => !v)}
+            title="Show or hide the file explorer"
+          >
+            Files
+          </button>
           <span className={`status-pill status-${status}`}>{status}</span>
           <button
             className={`btn btn-small${terminalOpen ? " btn-active" : ""}`}
@@ -96,7 +104,7 @@ export function App() {
         ))}
       </nav>
 
-      <div className="body">
+      <div className={`body${sidebarOpen ? "" : " sidebar-collapsed"}`}>
         <aside className={`sidebar${mobileView === "files" ? " mobile-visible" : ""}`}>
           <Explorer onOpenFile={openFile} />
         </aside>

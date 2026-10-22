@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ProposedCommand } from "@vinny-editor/shared";
 import { execApi, type CommandResult } from "../api";
+import { useConnection } from "../connection";
 
 export function CommandApproval({ command }: { command: ProposedCommand }) {
+  const { settings } = useConnection();
+  const autoApprove = settings?.autoApproveEdits ?? false;
   const [status, setStatus] = useState<"pending" | "running" | "done" | "rejected" | "error">(
     "pending",
   );
   const [result, setResult] = useState<CommandResult | null>(null);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(!autoApprove);
 
   async function approve() {
     setStatus("running");
@@ -24,6 +27,11 @@ export function CommandApproval({ command }: { command: ProposedCommand }) {
     setStatus("rejected");
     setExpanded(false);
   }
+
+  // Intentionally only on mount - auto-approve decides once per proposed command.
+  useEffect(() => {
+    if (autoApprove) void approve();
+  }, []);
 
   const verb =
     status === "done"

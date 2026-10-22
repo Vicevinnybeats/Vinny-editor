@@ -20,7 +20,11 @@ export type ChatMessage = z.infer<typeof chatMessageSchema>;
  * against the current file content, requiring explicit approval before the
  * write actually happens - nothing the model says touches disk on its own.
  */
-export const EDIT_BLOCK_PATTERN = /```vinny-edit:(\S+)\n([\s\S]*?)\n```/g;
+// The path uses `.+` rather than `\S+` - a Windows path routinely has spaces
+// in it (e.g. "Documents\Qwen 3\Test\..."), and `\S+` stops at the first one,
+// which makes the whole pattern fail to match and the fenced block falls
+// through to being shown as raw, unparsed text in the chat.
+export const EDIT_BLOCK_PATTERN = /```vinny-edit:(.+)\n([\s\S]*?)\n```/g;
 
 export interface ProposedEdit {
   path: string;
@@ -30,7 +34,9 @@ export interface ProposedEdit {
 export function parseProposedEdits(content: string): ProposedEdit[] {
   const edits: ProposedEdit[] = [];
   for (const match of content.matchAll(EDIT_BLOCK_PATTERN)) {
-    edits.push({ path: match[1], content: match[2] });
+    const path = match[1].trim();
+    if (!path) continue;
+    edits.push({ path, content: match[2] });
   }
   return edits;
 }
@@ -54,7 +60,9 @@ export interface ProposedCommand {
 export function parseProposedCommands(content: string): ProposedCommand[] {
   const commands: ProposedCommand[] = [];
   for (const match of content.matchAll(RUN_BLOCK_PATTERN)) {
-    commands.push({ command: match[1].trim() });
+    const command = match[1].trim();
+    if (!command) continue;
+    commands.push({ command });
   }
   return commands;
 }

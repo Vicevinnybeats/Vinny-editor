@@ -44,13 +44,19 @@ export function SettingsPanel() {
         />
       </label>
 
-      <label className="field">
-        <span>Workspace root</span>
+      <label className="field field-checkbox">
         <input
-          value={settings.workspaceRoot}
-          readOnly
-          title="Set via WORKSPACE_ROOT on the server"
+          type="checkbox"
+          checked={settings.autoApproveEdits}
+          onChange={(e) => save({ ...settings, autoApproveEdits: e.target.checked })}
         />
+        <span>
+          Auto-approve edits and commands
+          <small className="muted field-hint">
+            Proposed file edits and shell commands apply immediately instead of waiting for you to
+            click Approve in the Changes tab.
+          </small>
+        </span>
       </label>
 
       {saved && <p className="muted">Saved.</p>}

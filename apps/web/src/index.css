@@ -312,6 +312,14 @@ textarea {
   grid-template-columns: 220px 1fr 460px;
   min-height: 0;
 }
+@media (min-width: 901px) {
+  .body.sidebar-collapsed {
+    grid-template-columns: 1fr 460px;
+  }
+  .body.sidebar-collapsed .sidebar {
+    display: none;
+  }
+}
 
 .sidebar {
   background: var(--sidebar-bg);
@@ -965,6 +973,20 @@ textarea {
   border-radius: var(--radius);
   color: var(--text);
   padding: 6px 8px;
+}
+.field-checkbox {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+}
+.field-checkbox input {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.field-hint {
+  display: block;
+  font-size: 11px;
+  margin-top: 2px;
 }
 
 /* Terminal */

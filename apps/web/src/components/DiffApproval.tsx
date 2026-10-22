@@ -3,6 +3,7 @@ import { diffLines } from "diff";
 import { useEffect, useMemo, useState } from "react";
 import type { ProposedEdit } from "@vinny-editor/shared";
 import { fsApi } from "../api";
+import { useConnection } from "../connection";
 
 function countLines(text: string): number {
   if (text === "") return 0;
@@ -10,9 +11,11 @@ function countLines(text: string): number {
 }
 
 export function DiffApproval({ edit }: { edit: ProposedEdit }) {
+  const { settings } = useConnection();
+  const autoApprove = settings?.autoApproveEdits ?? false;
   const [original, setOriginal] = useState<string | null>(null);
   const [status, setStatus] = useState<"pending" | "applied" | "rejected" | "error">("pending");
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(!autoApprove);
 
   useEffect(() => {
     fsApi
@@ -46,6 +49,11 @@ export function DiffApproval({ edit }: { edit: ProposedEdit }) {
     setStatus("rejected");
     setExpanded(false);
   }
+
+  // Intentionally only on mount - auto-approve decides once per proposed edit.
+  useEffect(() => {
+    if (autoApprove) void approve();
+  }, []);
 
   const verb = status === "applied" ? "Edited" : status === "rejected" ? "Edit skipped" : "Edit";
 
