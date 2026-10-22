@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { ChatMessage } from "@vinny-editor/shared";
-import { insertChatMessage, listChatMessages } from "./db.js";
+import { getActiveProjectId, insertChatMessage, listChatMessages } from "./db.js";
 import { streamOllamaChat, type OllamaMessage } from "./ollama.js";
 import { broadcast } from "./ws-hub.js";
 
@@ -26,19 +26,20 @@ export function sendUserMessage(content: string): {
   userMessage: ChatMessage;
   assistantId: string;
 } {
+  const projectId = getActiveProjectId();
   const now = new Date().toISOString();
   const userMessage: ChatMessage = { id: randomUUID(), role: "user", content, createdAt: now };
-  insertChatMessage(userMessage);
-  broadcast({ type: "chat:message", message: userMessage });
+  insertChatMessage(userMessage, projectId);
+  broadcast({ type: "chat:message", message: userMessage, projectId });
 
   const assistantId = randomUUID();
-  void runAssistantReply(assistantId);
+  void runAssistantReply(assistantId, projectId);
 
   return { userMessage, assistantId };
 }
 
-async function runAssistantReply(assistantId: string): Promise<void> {
-  const history = listChatMessages();
+async function runAssistantReply(assistantId: string, projectId: string | null): Promise<void> {
+  const history = listChatMessages(projectId);
   const messages: OllamaMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
     ...history.map((m) => ({ role: m.role, content: m.content }) satisfies OllamaMessage),
@@ -48,13 +49,14 @@ async function runAssistantReply(assistantId: string): Promise<void> {
   try {
     for await (const delta of streamOllamaChat(messages)) {
       full += delta;
-      broadcast({ type: "chat:delta", id: assistantId, delta });
+      broadcast({ type: "chat:delta", id: assistantId, delta, projectId });
     }
   } catch (err) {
     broadcast({
       type: "chat:error",
       id: assistantId,
       message: err instanceof Error ? err.message : "Ollama request failed",
+      projectId,
     });
     return;
   }
@@ -65,6 +67,6 @@ async function runAssistantReply(assistantId: string): Promise<void> {
     content: full,
     createdAt: new Date().toISOString(),
   };
-  insertChatMessage(assistantMessage);
-  broadcast({ type: "chat:done", id: assistantId });
+  insertChatMessage(assistantMessage, projectId);
+  broadcast({ type: "chat:done", id: assistantId, projectId });
 }

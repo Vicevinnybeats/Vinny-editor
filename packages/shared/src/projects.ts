@@ -5,5 +5,6 @@ export const projectSchema = z.object({
   name: z.string(),
   path: z.string(),
   createdAt: z.string(),
+  githubUrl: z.string().nullable(),
 });
 export type Project = z.infer<typeof projectSchema>;

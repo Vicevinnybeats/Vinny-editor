@@ -121,6 +121,11 @@ export const projectsApi = {
       method: "POST",
       body: JSON.stringify({ name, path }),
     }),
+  clone: (url: string, token: string | undefined, name: string | undefined) =>
+    request<{ project: Project }>("/projects/clone", {
+      method: "POST",
+      body: JSON.stringify({ url, token, name }),
+    }),
   switchTo: (id: string) =>
     request<{ projects: Project[]; activeProjectId: string | null }>("/projects/switch", {
       method: "POST",

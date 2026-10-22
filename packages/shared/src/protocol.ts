@@ -67,24 +67,32 @@ export const projectsChangedSchema = z.object({
   type: z.literal("projects:changed"),
   projects: z.array(projectSchema),
   activeProjectId: z.string().nullable(),
+  chatHistory: z.array(chatMessageSchema),
 });
+// Chat events carry the project they belong to so a client viewing a
+// different project (e.g. the phone and the PC open at once, pointed at
+// different projects) can ignore streaming that isn't for what it's showing.
 export const chatMessageEventSchema = z.object({
   type: z.literal("chat:message"),
   message: chatMessageSchema,
+  projectId: z.string().nullable(),
 });
 export const chatDeltaSchema = z.object({
   type: z.literal("chat:delta"),
   id: z.string(),
   delta: z.string(),
+  projectId: z.string().nullable(),
 });
 export const chatDoneSchema = z.object({
   type: z.literal("chat:done"),
   id: z.string(),
+  projectId: z.string().nullable(),
 });
 export const chatErrorSchema = z.object({
   type: z.literal("chat:error"),
   id: z.string(),
   message: z.string(),
+  projectId: z.string().nullable(),
 });
 
 export const serverMessageSchema = z.discriminatedUnion("type", [

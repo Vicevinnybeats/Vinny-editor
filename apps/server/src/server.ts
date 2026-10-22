@@ -117,7 +117,7 @@ export function buildServer() {
         type: "state:snapshot",
         settings: getSettings(),
         tabs: listTabs(),
-        chatHistory: listChatMessages(),
+        chatHistory: listChatMessages(getActiveProjectId()),
         terminalBuffer: getTerminalBuffer(),
         serverTime: new Date().toISOString(),
         projects: listProjects(),

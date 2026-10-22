@@ -51,6 +51,17 @@ db.exec(`
   );
 `);
 
+// CREATE TABLE IF NOT EXISTS doesn't add columns to a table that already
+// existed from an earlier version of the app - add them defensively.
+function addColumnIfMissing(table: string, column: string, ddl: string) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!columns.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  }
+}
+addColumnIfMissing("chat_messages", "project_id", "project_id TEXT");
+addColumnIfMissing("projects", "github_url", "github_url TEXT");
+
 export function getSettings(): Settings {
   const row = db.prepare("SELECT data FROM settings WHERE id = 1").get() as
     { data: string } | undefined;
@@ -127,20 +138,19 @@ function rowToChat(row: ChatRow): ChatMessage {
   };
 }
 
-export function listChatMessages(limit = 200): ChatMessage[] {
+/** Chat history is scoped per project - switching projects shows that
+ * project's own conversation, not a single global thread. */
+export function listChatMessages(projectId: string | null, limit = 200): ChatMessage[] {
   const rows = db
-    .prepare("SELECT * FROM chat_messages ORDER BY created_at ASC LIMIT ?")
-    .all(limit) as ChatRow[];
+    .prepare("SELECT * FROM chat_messages WHERE project_id IS ? ORDER BY created_at ASC LIMIT ?")
+    .all(projectId, limit) as ChatRow[];
   return rows.map(rowToChat);
 }
 
-export function insertChatMessage(message: ChatMessage): void {
-  db.prepare("INSERT INTO chat_messages (id, role, content, created_at) VALUES (?, ?, ?, ?)").run(
-    message.id,
-    message.role,
-    message.content,
-    message.createdAt,
-  );
+export function insertChatMessage(message: ChatMessage, projectId: string | null): void {
+  db.prepare(
+    "INSERT INTO chat_messages (id, role, content, created_at, project_id) VALUES (?, ?, ?, ?, ?)",
+  ).run(message.id, message.role, message.content, message.createdAt, projectId);
 }
 
 export function clearTabs(): void {
@@ -152,10 +162,17 @@ interface ProjectRow {
   name: string;
   path: string;
   created_at: string;
+  github_url: string | null;
 }
 
 function rowToProject(row: ProjectRow): Project {
-  return { id: row.id, name: row.name, path: row.path, createdAt: row.created_at };
+  return {
+    id: row.id,
+    name: row.name,
+    path: row.path,
+    createdAt: row.created_at,
+    githubUrl: row.github_url,
+  };
 }
 
 export function listProjects(): Project[] {
@@ -163,14 +180,17 @@ export function listProjects(): Project[] {
   return rows.map(rowToProject);
 }
 
-export function addProject(name: string, path: string): Project {
-  const project: Project = { id: randomUUID(), name, path, createdAt: new Date().toISOString() };
-  db.prepare("INSERT INTO projects (id, name, path, created_at) VALUES (?, ?, ?, ?)").run(
-    project.id,
-    project.name,
-    project.path,
-    project.createdAt,
-  );
+export function addProject(name: string, path: string, githubUrl: string | null = null): Project {
+  const project: Project = {
+    id: randomUUID(),
+    name,
+    path,
+    createdAt: new Date().toISOString(),
+    githubUrl,
+  };
+  db.prepare(
+    "INSERT INTO projects (id, name, path, created_at, github_url) VALUES (?, ?, ?, ?, ?)",
+  ).run(project.id, project.name, project.path, project.createdAt, project.githubUrl);
   return project;
 }
 

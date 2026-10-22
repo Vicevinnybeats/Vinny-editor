@@ -1,13 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { listChatMessages } from "../db.js";
+import { getActiveProjectId, listChatMessages } from "../db.js";
 import { sendUserMessage } from "../chat.js";
 
 const sendBodySchema = z.object({ content: z.string().min(1) });
 
 export async function chatRoutes(fastify: FastifyInstance) {
   fastify.get("/history", async (_request, reply) => {
-    reply.send({ messages: listChatMessages() });
+    reply.send({ messages: listChatMessages(getActiveProjectId()) });
   });
 
   fastify.post("/message", async (request, reply) => {

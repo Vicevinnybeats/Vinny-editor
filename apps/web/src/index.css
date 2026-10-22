@@ -176,77 +176,96 @@ textarea {
   gap: 10px;
 }
 
-.project-switcher {
+.session-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.session-list-empty {
+  padding: 0 14px;
+}
+.session-add {
   position: relative;
 }
-.project-switcher-trigger {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 180px;
-}
-.project-switcher-trigger > :first-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.project-switcher-chevron {
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-.project-switcher-menu {
+.session-add-menu {
   position: absolute;
   top: 100%;
-  left: 0;
-  width: 320px;
-  max-height: 360px;
-  overflow-y: auto;
+  right: 0;
+  width: 180px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
-  margin-top: 8px;
+  margin-top: 6px;
   padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   animation: fade-slide-in 0.15s ease;
   z-index: 30;
 }
-.project-switcher-item {
+.session-add-menu button {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text);
+  padding: 7px 8px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+  transition: background-color 0.15s ease;
+}
+.session-add-menu button:hover {
+  background: var(--accent-soft);
+}
+.session-items {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px;
+  overflow-y: auto;
+}
+.session-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   width: 100%;
   background: transparent;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
-.project-switcher-item:hover {
+.session-item:hover {
   background: var(--accent-soft);
 }
-.project-switcher-item-active {
-  border: 1px solid var(--accent);
+.session-item-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
-.project-switcher-item-text {
+.session-item-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
-.project-switcher-item-name {
+.session-item-name {
   font-size: 13px;
 }
-.project-switcher-item-path {
+.session-item-path {
   font-size: 11px;
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.project-switcher-remove {
+.session-item-remove {
   color: var(--text-muted);
   cursor: pointer;
   font-size: 16px;
@@ -254,24 +273,8 @@ textarea {
   padding: 2px 4px;
   flex-shrink: 0;
 }
-.project-switcher-remove:hover {
+.session-item-remove:hover {
   color: var(--danger);
-}
-.project-switcher-add {
-  width: 100%;
-  background: transparent;
-  border: 1px dashed var(--border);
-  border-radius: 6px;
-  color: var(--accent);
-  padding: 7px 8px;
-  margin-top: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  text-align: center;
-  transition: border-color 0.15s ease;
-}
-.project-switcher-add:hover {
-  border-color: var(--accent);
 }
 
 .status-pill {
@@ -311,14 +314,6 @@ textarea {
   display: grid;
   grid-template-columns: 220px 1fr 460px;
   min-height: 0;
-}
-@media (min-width: 901px) {
-  .body.sidebar-collapsed {
-    grid-template-columns: 1fr 460px;
-  }
-  .body.sidebar-collapsed .sidebar {
-    display: none;
-  }
 }
 
 .sidebar {

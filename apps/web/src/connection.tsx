@@ -40,11 +40,16 @@ type Action =
     }
   | { kind: "settings"; settings: Settings }
   | { kind: "tabs"; tabs: Tab[] }
-  | { kind: "chatMessage"; message: ChatMessage }
-  | { kind: "chatDelta"; id: string; delta: string }
-  | { kind: "chatDone"; id: string }
-  | { kind: "chatError"; id: string; message: string }
-  | { kind: "projects"; projects: Project[]; activeProjectId: string | null };
+  | { kind: "chatMessage"; message: ChatMessage; projectId: string | null }
+  | { kind: "chatDelta"; id: string; delta: string; projectId: string | null }
+  | { kind: "chatDone"; id: string; projectId: string | null }
+  | { kind: "chatError"; id: string; message: string; projectId: string | null }
+  | {
+      kind: "projects";
+      projects: Project[];
+      activeProjectId: string | null;
+      chatHistory: ChatMessage[];
+    };
 
 function reducer(state: ConnectionState, action: Action): ConnectionState {
   switch (action.kind) {
@@ -64,10 +69,16 @@ function reducer(state: ConnectionState, action: Action): ConnectionState {
     case "tabs":
       return { ...state, tabs: action.tabs };
     case "chatMessage": {
+      // Chat events are broadcast to every connected client regardless of
+      // which project it's currently viewing (e.g. the phone and the PC
+      // open at once, pointed at different projects) - ignore anything
+      // that isn't for the project this client is actually showing.
+      if (action.projectId !== state.activeProjectId) return state;
       if (state.chatMessages.some((m) => m.id === action.message.id)) return state;
       return { ...state, chatMessages: [...state.chatMessages, action.message] };
     }
     case "chatDelta": {
+      if (action.projectId !== state.activeProjectId) return state;
       const existing = state.chatMessages.find((m) => m.id === action.id);
       if (!existing) {
         const created: ChatMessage = {
@@ -87,6 +98,7 @@ function reducer(state: ConnectionState, action: Action): ConnectionState {
       };
     }
     case "chatDone":
+      if (action.projectId !== state.activeProjectId) return state;
       return {
         ...state,
         chatMessages: state.chatMessages.map((m) =>
@@ -94,6 +106,7 @@ function reducer(state: ConnectionState, action: Action): ConnectionState {
         ),
       };
     case "chatError":
+      if (action.projectId !== state.activeProjectId) return state;
       return {
         ...state,
         chatMessages: state.chatMessages.map((m) =>
@@ -101,7 +114,12 @@ function reducer(state: ConnectionState, action: Action): ConnectionState {
         ),
       };
     case "projects":
-      return { ...state, projects: action.projects, activeProjectId: action.activeProjectId };
+      return {
+        ...state,
+        projects: action.projects,
+        activeProjectId: action.activeProjectId,
+        chatMessages: action.chatHistory,
+      };
     default:
       return state;
   }
@@ -173,16 +191,26 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
             dispatch({ kind: "tabs", tabs: msg.tabs });
             break;
           case "chat:message":
-            dispatch({ kind: "chatMessage", message: msg.message });
+            dispatch({ kind: "chatMessage", message: msg.message, projectId: msg.projectId });
             break;
           case "chat:delta":
-            dispatch({ kind: "chatDelta", id: msg.id, delta: msg.delta });
+            dispatch({
+              kind: "chatDelta",
+              id: msg.id,
+              delta: msg.delta,
+              projectId: msg.projectId,
+            });
             break;
           case "chat:done":
-            dispatch({ kind: "chatDone", id: msg.id });
+            dispatch({ kind: "chatDone", id: msg.id, projectId: msg.projectId });
             break;
           case "chat:error":
-            dispatch({ kind: "chatError", id: msg.id, message: msg.message });
+            dispatch({
+              kind: "chatError",
+              id: msg.id,
+              message: msg.message,
+              projectId: msg.projectId,
+            });
             break;
           case "fs:changed":
             for (const cb of fsListeners.current) cb(msg.path);
@@ -192,6 +220,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
               kind: "projects",
               projects: msg.projects,
               activeProjectId: msg.activeProjectId,
+              chatHistory: msg.chatHistory,
             });
             break;
           case "terminal:output":

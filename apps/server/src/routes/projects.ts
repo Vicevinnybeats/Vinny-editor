@@ -6,16 +6,23 @@ import {
   addProject,
   clearTabs,
   getActiveProjectId,
+  listChatMessages,
   listProjects,
   removeProject,
   setActiveProjectId,
 } from "../db.js";
+import { CloneError, cloneRepo } from "../github.js";
 import { restartTerminal } from "../terminal.js";
 import { restartWorkspaceWatcher } from "../watcher.js";
 import { broadcast } from "../ws-hub.js";
 import { setWorkspaceRoot } from "../workspace-fs.js";
 
 const addBodySchema = z.object({ name: z.string().min(1), path: z.string().min(1) });
+const cloneBodySchema = z.object({
+  url: z.string().min(1),
+  token: z.string().optional(),
+  name: z.string().optional(),
+});
 const switchBodySchema = z.object({ id: z.string() });
 const idParamSchema = z.object({ id: z.string() });
 
@@ -24,7 +31,27 @@ function broadcastProjects() {
     type: "projects:changed",
     projects: listProjects(),
     activeProjectId: getActiveProjectId(),
+    chatHistory: listChatMessages(getActiveProjectId()),
   });
+}
+
+/** Makes `id` the active project: re-points every workspace-scoped service
+ * at its folder, clears tabs (they belonged to whatever was active before),
+ * and broadcasts the result. Used both for an explicit switch and right
+ * after creating a project - starting a new chat/session means landing in
+ * it immediately, not just adding it to the list. */
+async function activateProject(id: string): Promise<void> {
+  const project = listProjects().find((p) => p.id === id);
+  if (!project) return;
+
+  setWorkspaceRoot(project.path);
+  clearTabs();
+  await restartWorkspaceWatcher();
+  restartTerminal();
+  setActiveProjectId(id);
+
+  broadcast({ type: "tabs:changed", tabs: [] });
+  broadcastProjects();
 }
 
 export async function projectsRoutes(fastify: FastifyInstance) {
@@ -47,26 +74,29 @@ export async function projectsRoutes(fastify: FastifyInstance) {
       return;
     }
     const project = addProject(name, resolved);
-    broadcastProjects();
+    await activateProject(project.id);
     reply.send({ project });
+  });
+
+  fastify.post("/clone", async (request, reply) => {
+    const { url, token, name } = cloneBodySchema.parse(request.body);
+    try {
+      const cloned = await cloneRepo(url, token, name);
+      const project = addProject(cloned.name, cloned.path, url);
+      await activateProject(project.id);
+      reply.send({ project });
+    } catch (err) {
+      reply.code(400).send({ error: err instanceof CloneError ? err.message : "Clone failed" });
+    }
   });
 
   fastify.post("/switch", async (request, reply) => {
     const { id } = switchBodySchema.parse(request.body);
-    const project = listProjects().find((p) => p.id === id);
-    if (!project) {
+    if (!listProjects().some((p) => p.id === id)) {
       reply.code(404).send({ error: "Unknown project" });
       return;
     }
-
-    setWorkspaceRoot(project.path);
-    clearTabs();
-    await restartWorkspaceWatcher();
-    restartTerminal();
-    setActiveProjectId(id);
-
-    broadcast({ type: "tabs:changed", tabs: [] });
-    broadcastProjects();
+    await activateProject(id);
     reply.send({ projects: listProjects(), activeProjectId: id });
   });
 

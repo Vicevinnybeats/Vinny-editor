@@ -6,13 +6,13 @@ import { ChatPanel } from "./components/ChatPanel";
 import { EditorPanel } from "./components/EditorPanel";
 import { Explorer } from "./components/Explorer";
 import { GitPanel } from "./components/GitPanel";
-import { ProjectSwitcher } from "./components/ProjectSwitcher";
 import { SearchPanel } from "./components/SearchPanel";
+import { SessionList } from "./components/SessionList";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { TerminalPanel } from "./components/TerminalPanel";
 
-type RightTab = "editor" | "changes" | "git" | "search" | "settings";
-type MobileView = "files" | "chat" | "panel";
+type RightTab = "editor" | "changes" | "files" | "git" | "search" | "settings";
+type MobileView = "chats" | "chat" | "panel";
 
 export function App() {
   const { status, tabs, activeProjectId } = useConnection();
@@ -20,7 +20,6 @@ export function App() {
   const [rightTab, setRightTab] = useState<RightTab>("editor");
   const [mobileView, setMobileView] = useState<MobileView>("chat");
   const [terminalOpen, setTerminalOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // A project switch points the server at a different folder, so any
   // previously open tab's path no longer means anything.
@@ -58,6 +57,8 @@ export function App() {
       />
     ) : rightTab === "changes" ? (
       <ChangesPanel />
+    ) : rightTab === "files" ? (
+      <Explorer onOpenFile={openFile} />
     ) : rightTab === "git" ? (
       <GitPanel />
     ) : rightTab === "search" ? (
@@ -74,14 +75,6 @@ export function App() {
           <span className="brand-text">Vinny Editor</span>
         </div>
         <div className="topbar-actions">
-          <ProjectSwitcher />
-          <button
-            className={`btn btn-small${sidebarOpen ? " btn-active" : ""}`}
-            onClick={() => setSidebarOpen((v) => !v)}
-            title="Show or hide the file explorer"
-          >
-            Files
-          </button>
           <span className={`status-pill status-${status}`}>{status}</span>
           <button
             className={`btn btn-small${terminalOpen ? " btn-active" : ""}`}
@@ -93,20 +86,20 @@ export function App() {
       </header>
 
       <nav className="mobile-tabs">
-        {(["files", "chat", "panel"] as MobileView[]).map((view) => (
+        {(["chats", "chat", "panel"] as MobileView[]).map((view) => (
           <button
             key={view}
             className={`mobile-tab${mobileView === view ? " mobile-tab-active" : ""}`}
             onClick={() => setMobileView(view)}
           >
-            {view === "files" ? "Files" : view === "chat" ? "Chat" : "Editor"}
+            {view === "chats" ? "Chats" : view === "chat" ? "Chat" : "Editor"}
           </button>
         ))}
       </nav>
 
-      <div className={`body${sidebarOpen ? "" : " sidebar-collapsed"}`}>
-        <aside className={`sidebar${mobileView === "files" ? " mobile-visible" : ""}`}>
-          <Explorer onOpenFile={openFile} />
+      <div className="body">
+        <aside className={`sidebar${mobileView === "chats" ? " mobile-visible" : ""}`}>
+          <SessionList />
         </aside>
 
         <main className={`main${mobileView === "chat" ? " mobile-visible" : ""}`}>
@@ -115,15 +108,17 @@ export function App() {
 
         <aside className={`right-dock${mobileView === "panel" ? " mobile-visible" : ""}`}>
           <div className="right-dock-tabs">
-            {(["editor", "changes", "git", "search", "settings"] as RightTab[]).map((tab) => (
-              <button
-                key={tab}
-                className={`dock-tab${rightTab === tab ? " dock-tab-active" : ""}`}
-                onClick={() => setRightTab(tab)}
-              >
-                {tab[0].toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
+            {(["editor", "changes", "files", "git", "search", "settings"] as RightTab[]).map(
+              (tab) => (
+                <button
+                  key={tab}
+                  className={`dock-tab${rightTab === tab ? " dock-tab-active" : ""}`}
+                  onClick={() => setRightTab(tab)}
+                >
+                  {tab[0].toUpperCase() + tab.slice(1)}
+                </button>
+              ),
+            )}
           </div>
           <div className="right-dock-body">{rightPanel}</div>
         </aside>
