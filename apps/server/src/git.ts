@@ -79,3 +79,7 @@ export async function unstageFile(path: string): Promise<void> {
 export async function commitStaged(message: string): Promise<void> {
   await git().commit(message);
 }
+
+export async function pushCommits(): Promise<void> {
+  await git().push();
+}

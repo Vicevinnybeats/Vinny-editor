@@ -219,6 +219,64 @@ textarea {
 .session-add-menu button:hover {
   background: var(--accent-soft);
 }
+.github-picker {
+  width: 200px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.github-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 2px 8px 6px;
+}
+.github-picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.github-picker-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.github-picker-private {
+  font-size: 10px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+.github-picker-error {
+  font-size: 12px;
+  color: var(--danger);
+  padding: 6px 8px;
+}
+.github-picker-url-fallback {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--accent);
+  padding: 7px 8px;
+  margin-top: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: center;
+}
+.github-picker-url-fallback:hover {
+  border-color: var(--accent);
+}
 .session-items {
   list-style: none;
   margin: 0;

@@ -4,6 +4,7 @@ export const settingsSchema = z.object({
   theme: z.enum(["light", "dark", "system"]).default("system"),
   ollamaModel: z.string().default("qwen3"),
   autoApproveEdits: z.boolean().default(false),
+  githubToken: z.string().default(""),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;

@@ -59,6 +59,21 @@ export function SettingsPanel() {
         </span>
       </label>
 
+      <label className="field">
+        <span>GitHub personal access token</span>
+        <input
+          type="password"
+          value={settings.githubToken}
+          placeholder="ghp_..."
+          onChange={(e) => setSettings({ ...settings, githubToken: e.target.value })}
+          onBlur={() => save(settings)}
+        />
+        <small className="muted field-hint">
+          Lets the "From GitHub" chat option list and clone your own repos, and lets the Git tab
+          push commits. Stored only in this app's local database on your PC - needs "repo" scope.
+        </small>
+      </label>
+
       {saved && <p className="muted">Saved.</p>}
 
       <button className="btn" onClick={() => authApi.logout().then(() => window.location.reload())}>

@@ -81,6 +81,7 @@ export const gitApi = {
       method: "POST",
       body: JSON.stringify({ message }),
     }),
+  push: () => request<{ status: GitStatus }>("/git/push", { method: "POST", body: "{}" }),
 };
 
 export const searchApi = {
@@ -135,4 +136,15 @@ export const projectsApi = {
     request<{ projects: Project[]; activeProjectId: string | null }>(`/projects/${id}`, {
       method: "DELETE",
     }),
+};
+
+export interface GithubRepo {
+  fullName: string;
+  htmlUrl: string;
+  private: boolean;
+  updatedAt: string;
+}
+
+export const githubApi = {
+  listRepos: () => request<{ repos: GithubRepo[] }>("/github/repos"),
 };

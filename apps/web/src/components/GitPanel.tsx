@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import type { GitStatus } from "@vinny-editor/shared";
-import { gitApi } from "../api";
+import { ApiError, gitApi } from "../api";
 
 export function GitPanel() {
   const [status, setStatus] = useState<GitStatus | null>(null);
   const [diff, setDiff] = useState<{ path: string; text: string } | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pushing, setPushing] = useState(false);
 
   function refresh() {
     void gitApi.status().then(setStatus);
@@ -41,12 +42,34 @@ export function GitPanel() {
     }
   }
 
+  async function push() {
+    setPushing(true);
+    try {
+      await gitApi.push();
+      refresh();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? err.message : "Push failed.");
+    } finally {
+      setPushing(false);
+    }
+  }
+
   if (!status) return <div className="git-panel muted">Loading git status...</div>;
   if (!status.isRepo) return <div className="git-panel muted">Not a git repository.</div>;
 
   return (
     <div className="git-panel">
-      <div className="panel-title">Git &middot; {status.branch ?? "detached"}</div>
+      <div className="panel-title-row">
+        <div className="panel-title">Git &middot; {status.branch ?? "detached"}</div>
+        <button
+          className="btn btn-small"
+          onClick={push}
+          disabled={pushing || status.ahead === 0}
+          title={status.ahead === 0 ? "Nothing to push" : `Push ${status.ahead} commit(s)`}
+        >
+          {pushing ? "Pushing..." : status.ahead > 0 ? `Push (${status.ahead})` : "Push"}
+        </button>
+      </div>
       <FileGroup
         title="Staged"
         files={status.staged}

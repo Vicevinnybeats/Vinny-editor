@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { commitStaged, getDiff, getStatus, stageFile, unstageFile } from "../git.js";
+import { commitStaged, getDiff, getStatus, pushCommits, stageFile, unstageFile } from "../git.js";
 
 const pathQuerySchema = z.object({
   path: z.string().optional(),
@@ -35,5 +35,14 @@ export async function gitRoutes(fastify: FastifyInstance) {
     const { message } = commitBodySchema.parse(request.body);
     await commitStaged(message);
     reply.send({ status: await getStatus() });
+  });
+
+  fastify.post("/push", async (_request, reply) => {
+    try {
+      await pushCommits();
+      reply.send({ status: await getStatus() });
+    } catch (err) {
+      reply.code(400).send({ error: err instanceof Error ? err.message : "Push failed" });
+    }
   });
 }

@@ -24,6 +24,7 @@ import { searchRoutes } from "./routes/search.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { chatRoutes } from "./routes/chat.js";
 import { execRoutes } from "./routes/exec.js";
+import { githubRoutes } from "./routes/github.js";
 import { projectsRoutes } from "./routes/projects.js";
 import { registerSocket } from "./ws-hub.js";
 import {
@@ -104,6 +105,7 @@ export function buildServer() {
       instance.register(chatRoutes, { prefix: "/chat" });
       instance.register(execRoutes, { prefix: "/exec" });
       instance.register(projectsRoutes, { prefix: "/projects" });
+      instance.register(githubRoutes, { prefix: "/github" });
     },
     { prefix: "/api" },
   );
