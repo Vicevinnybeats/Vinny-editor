@@ -1,5 +1,5 @@
 import * as pty from "node-pty";
-import { WORKSPACE_ROOT } from "./workspace-fs.js";
+import { getWorkspaceRoot } from "./workspace-fs.js";
 import { broadcast } from "./ws-hub.js";
 
 const MAX_BUFFER_CHARS = 200_000;
@@ -29,7 +29,7 @@ function ensureTerminal(): pty.IPty | null {
       name: "xterm-color",
       cols: 80,
       rows: 24,
-      cwd: WORKSPACE_ROOT,
+      cwd: getWorkspaceRoot(),
       env: process.env as Record<string, string>,
     });
   } catch (err) {
@@ -63,5 +63,20 @@ export function resizeTerminal(cols: number, rows: number): void {
 
 /** Called on first client connect so a shell exists even before anyone types. */
 export function startTerminalIfNeeded(): void {
+  ensureTerminal();
+}
+
+/** Kills the current shell and starts a fresh one in the new active
+ * project's folder - a running shell's cwd can't be changed after spawn. */
+export function restartTerminal(): void {
+  if (ptyProcess) {
+    try {
+      ptyProcess.kill();
+    } catch {
+      // already dead
+    }
+    ptyProcess = null;
+  }
+  outputBuffer = "";
   ensureTerminal();
 }

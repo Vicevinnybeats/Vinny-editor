@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { tabsApi } from "./api";
 import { useConnection } from "./connection";
 import { ChangesPanel } from "./components/ChangesPanel";
@@ -6,6 +6,7 @@ import { ChatPanel } from "./components/ChatPanel";
 import { EditorPanel } from "./components/EditorPanel";
 import { Explorer } from "./components/Explorer";
 import { GitPanel } from "./components/GitPanel";
+import { ProjectSwitcher } from "./components/ProjectSwitcher";
 import { SearchPanel } from "./components/SearchPanel";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { TerminalPanel } from "./components/TerminalPanel";
@@ -14,11 +15,17 @@ type RightTab = "editor" | "changes" | "git" | "search" | "settings";
 type MobileView = "files" | "chat" | "panel";
 
 export function App() {
-  const { status, tabs } = useConnection();
+  const { status, tabs, activeProjectId } = useConnection();
   const [activePath, setActivePath] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<RightTab>("editor");
   const [mobileView, setMobileView] = useState<MobileView>("chat");
   const [terminalOpen, setTerminalOpen] = useState(false);
+
+  // A project switch points the server at a different folder, so any
+  // previously open tab's path no longer means anything.
+  useEffect(() => {
+    setActivePath(null);
+  }, [activeProjectId]);
 
   async function openFile(path: string) {
     await tabsApi.open(path);
@@ -66,6 +73,7 @@ export function App() {
           <span className="brand-text">Vinny Editor</span>
         </div>
         <div className="topbar-actions">
+          <ProjectSwitcher />
           <span className={`status-pill status-${status}`}>{status}</span>
           <button
             className={`btn btn-small${terminalOpen ? " btn-active" : ""}`}

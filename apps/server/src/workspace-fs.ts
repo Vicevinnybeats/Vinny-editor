@@ -4,8 +4,21 @@ import { resolve, relative, dirname, join, sep } from "node:path";
 import type { FileEntry } from "@vinny-editor/shared";
 import { env } from "./env.js";
 
-export const WORKSPACE_ROOT = resolve(env.WORKSPACE_ROOT);
-mkdirSync(WORKSPACE_ROOT, { recursive: true });
+let workspaceRoot = resolve(env.WORKSPACE_ROOT);
+mkdirSync(workspaceRoot, { recursive: true });
+
+export function getWorkspaceRoot(): string {
+  return workspaceRoot;
+}
+
+/** Switches the active project root for every workspace-scoped operation
+ * (fs, git, search, exec, the terminal, the file watcher). Creates the
+ * folder if it doesn't already exist. */
+export function setWorkspaceRoot(path: string): void {
+  const resolved = resolve(path);
+  mkdirSync(resolved, { recursive: true });
+  workspaceRoot = resolved;
+}
 
 const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2 MB
 
@@ -25,11 +38,11 @@ export class FileTooLargeError extends Error {
   }
 }
 
-/** Resolves a client-supplied relative path against WORKSPACE_ROOT, refusing anything that escapes it. */
+/** Resolves a client-supplied relative path against the active project root, refusing anything that escapes it. */
 export function resolveSafePath(relPath: string): string {
   const normalizedRel = relPath.replace(/^[/\\]+/, "");
-  const resolved = resolve(WORKSPACE_ROOT, normalizedRel);
-  const rel = relative(WORKSPACE_ROOT, resolved);
+  const resolved = resolve(workspaceRoot, normalizedRel);
+  const rel = relative(workspaceRoot, resolved);
   if (rel === "" || rel === ".") return resolved;
   if (rel.startsWith("..") || rel.split(sep)[0] === "..") {
     throw new PathTraversalError(relPath);
@@ -38,7 +51,7 @@ export function resolveSafePath(relPath: string): string {
 }
 
 export function toWorkspaceRelative(absPath: string): string {
-  return relative(WORKSPACE_ROOT, absPath).split(sep).join("/");
+  return relative(workspaceRoot, absPath).split(sep).join("/");
 }
 
 export function listDir(relPath: string): FileEntry[] {

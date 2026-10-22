@@ -12,6 +12,7 @@ import {
   clientMessageSchema,
   serverMessageSchema,
   type ChatMessage,
+  type Project,
   type Settings,
   type Tab,
 } from "@vinny-editor/shared";
@@ -23,6 +24,8 @@ interface ConnectionState {
   settings: Settings | null;
   tabs: Tab[];
   chatMessages: ChatMessage[];
+  projects: Project[];
+  activeProjectId: string | null;
 }
 
 type Action =
@@ -32,13 +35,16 @@ type Action =
       settings: Settings;
       tabs: Tab[];
       chatHistory: ChatMessage[];
+      projects: Project[];
+      activeProjectId: string | null;
     }
   | { kind: "settings"; settings: Settings }
   | { kind: "tabs"; tabs: Tab[] }
   | { kind: "chatMessage"; message: ChatMessage }
   | { kind: "chatDelta"; id: string; delta: string }
   | { kind: "chatDone"; id: string }
-  | { kind: "chatError"; id: string; message: string };
+  | { kind: "chatError"; id: string; message: string }
+  | { kind: "projects"; projects: Project[]; activeProjectId: string | null };
 
 function reducer(state: ConnectionState, action: Action): ConnectionState {
   switch (action.kind) {
@@ -50,6 +56,8 @@ function reducer(state: ConnectionState, action: Action): ConnectionState {
         settings: action.settings,
         tabs: action.tabs,
         chatMessages: action.chatHistory,
+        projects: action.projects,
+        activeProjectId: action.activeProjectId,
       };
     case "settings":
       return { ...state, settings: action.settings };
@@ -92,6 +100,8 @@ function reducer(state: ConnectionState, action: Action): ConnectionState {
           m.id === action.id ? { ...m, content: `Error: ${action.message}`, pending: false } : m,
         ),
       };
+    case "projects":
+      return { ...state, projects: action.projects, activeProjectId: action.activeProjectId };
     default:
       return state;
   }
@@ -113,6 +123,8 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
     settings: null,
     tabs: [],
     chatMessages: [],
+    projects: [],
+    activeProjectId: null,
   });
 
   const socketRef = useRef<WebSocket | null>(null);
@@ -150,6 +162,8 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
               settings: msg.settings,
               tabs: msg.tabs,
               chatHistory: msg.chatHistory,
+              projects: msg.projects,
+              activeProjectId: msg.activeProjectId,
             });
             break;
           case "settings:changed":
@@ -172,6 +186,13 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
             break;
           case "fs:changed":
             for (const cb of fsListeners.current) cb(msg.path);
+            break;
+          case "projects:changed":
+            dispatch({
+              kind: "projects",
+              projects: msg.projects,
+              activeProjectId: msg.activeProjectId,
+            });
             break;
           case "terminal:output":
             for (const cb of terminalListeners.current) cb(msg.data);

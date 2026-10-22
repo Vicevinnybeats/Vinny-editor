@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { rgPath } from "@vscode/ripgrep";
 import type { SearchMatch } from "@vinny-editor/shared";
-import { WORKSPACE_ROOT } from "./workspace-fs.js";
+import { getWorkspaceRoot } from "./workspace-fs.js";
 
 interface RgMatchMessage {
   type: "match";
@@ -29,7 +29,7 @@ export function searchWorkspace(query: string, limit = 200): Promise<SearchMatch
     const proc = spawn(
       rgPath,
       ["--json", "--max-count", "50", "--max-filesize", "2M", "-e", query, "."],
-      { cwd: WORKSPACE_ROOT },
+      { cwd: getWorkspaceRoot() },
     );
 
     const results: SearchMatch[] = [];

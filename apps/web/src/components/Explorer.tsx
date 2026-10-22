@@ -10,15 +10,16 @@ interface ExplorerProps {
 export function Explorer({ onOpenFile }: ExplorerProps) {
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const { subscribeFsChange } = useConnection();
+  const { subscribeFsChange, activeProjectId } = useConnection();
 
   function refresh() {
     return fsApi.tree("").then((res) => setEntries(res.entries));
   }
 
   useEffect(() => {
+    setLoading(true);
     refresh().finally(() => setLoading(false));
-  }, []);
+  }, [activeProjectId]);
 
   useEffect(() => subscribeFsChange(() => void refresh()), [subscribeFsChange]);
 
@@ -43,7 +44,7 @@ export function Explorer({ onOpenFile }: ExplorerProps) {
       ) : entries.length === 0 ? (
         <p className="muted">Empty workspace.</p>
       ) : (
-        <ul className="tree">
+        <ul className="tree" key={activeProjectId}>
           {entries.map((entry) => (
             <TreeNode key={entry.path} entry={entry} depth={0} onOpenFile={onOpenFile} />
           ))}

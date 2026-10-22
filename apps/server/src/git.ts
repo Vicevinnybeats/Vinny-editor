@@ -1,12 +1,24 @@
-import { simpleGit } from "simple-git";
+import { simpleGit, type SimpleGit } from "simple-git";
 import type { GitStatus } from "@vinny-editor/shared";
-import { WORKSPACE_ROOT } from "./workspace-fs.js";
+import { getWorkspaceRoot } from "./workspace-fs.js";
 
-const git = simpleGit(WORKSPACE_ROOT);
+let cachedRoot: string | null = null;
+let gitInstance: SimpleGit | null = null;
+
+/** simple-git is bound to one root at construction time, so re-create it
+ * whenever the active project changes instead of caching it forever. */
+function git(): SimpleGit {
+  const root = getWorkspaceRoot();
+  if (!gitInstance || root !== cachedRoot) {
+    gitInstance = simpleGit(root);
+    cachedRoot = root;
+  }
+  return gitInstance;
+}
 
 export async function isGitRepo(): Promise<boolean> {
   try {
-    return await git.checkIsRepo();
+    return await git().checkIsRepo();
   } catch {
     return false;
   }
@@ -25,7 +37,7 @@ export async function getStatus(): Promise<GitStatus> {
     };
   }
 
-  const status = await git.status();
+  const status = await git().status();
   const staged = new Set<string>();
   const unstaged = new Set<string>();
   const untracked = new Set<string>();
@@ -53,17 +65,17 @@ export async function getStatus(): Promise<GitStatus> {
 export async function getDiff(path: string | undefined, staged: boolean): Promise<string> {
   const args = staged ? ["--cached"] : [];
   if (path) args.push("--", path);
-  return git.diff(args);
+  return git().diff(args);
 }
 
 export async function stageFile(path: string): Promise<void> {
-  await git.add([path]);
+  await git().add([path]);
 }
 
 export async function unstageFile(path: string): Promise<void> {
-  await git.raw(["reset", "HEAD", "--", path]);
+  await git().raw(["reset", "HEAD", "--", path]);
 }
 
 export async function commitStaged(message: string): Promise<void> {
-  await git.commit(message);
+  await git().commit(message);
 }

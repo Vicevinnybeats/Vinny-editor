@@ -5,3 +5,4 @@ export * from "./chat.js";
 export * from "./tabs.js";
 export * from "./git.js";
 export * from "./search.js";
+export * from "./projects.js";

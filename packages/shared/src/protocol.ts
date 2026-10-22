@@ -2,6 +2,7 @@ import { z } from "zod";
 import { settingsSchema } from "./settings.js";
 import { tabSchema } from "./tabs.js";
 import { chatMessageSchema } from "./chat.js";
+import { projectSchema } from "./projects.js";
 
 /**
  * Every client (phone, desktop, ...) connects over this WS protocol and treats
@@ -22,6 +23,8 @@ export const stateSnapshotSchema = z.object({
   chatHistory: z.array(chatMessageSchema),
   terminalBuffer: z.string(),
   serverTime: z.string(),
+  projects: z.array(projectSchema),
+  activeProjectId: z.string().nullable(),
 });
 export type StateSnapshot = z.infer<typeof stateSnapshotSchema>;
 
@@ -60,6 +63,11 @@ export const fsChangedSchema = z.object({
   type: z.literal("fs:changed"),
   path: z.string(),
 });
+export const projectsChangedSchema = z.object({
+  type: z.literal("projects:changed"),
+  projects: z.array(projectSchema),
+  activeProjectId: z.string().nullable(),
+});
 export const chatMessageEventSchema = z.object({
   type: z.literal("chat:message"),
   message: chatMessageSchema,
@@ -86,6 +94,7 @@ export const serverMessageSchema = z.discriminatedUnion("type", [
   settingsChangedSchema,
   tabsChangedSchema,
   fsChangedSchema,
+  projectsChangedSchema,
   chatMessageEventSchema,
   chatDeltaSchema,
   chatDoneSchema,

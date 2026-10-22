@@ -2,6 +2,7 @@ import type {
   ChatMessage,
   FileEntry,
   GitStatus,
+  Project,
   SearchMatch,
   Settings,
   Tab,
@@ -111,4 +112,22 @@ export interface CommandResult {
 export const execApi = {
   run: (command: string) =>
     request<CommandResult>("/exec/run", { method: "POST", body: JSON.stringify({ command }) }),
+};
+
+export const projectsApi = {
+  list: () => request<{ projects: Project[]; activeProjectId: string | null }>("/projects"),
+  add: (name: string, path: string) =>
+    request<{ project: Project }>("/projects", {
+      method: "POST",
+      body: JSON.stringify({ name, path }),
+    }),
+  switchTo: (id: string) =>
+    request<{ projects: Project[]; activeProjectId: string | null }>("/projects/switch", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    }),
+  remove: (id: string) =>
+    request<{ projects: Project[]; activeProjectId: string | null }>(`/projects/${id}`, {
+      method: "DELETE",
+    }),
 };

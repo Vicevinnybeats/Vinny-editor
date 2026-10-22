@@ -1,5 +1,6 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { randomUUID } from "node:crypto";
 import Database from "better-sqlite3";
 import {
   defaultSettings,
@@ -7,6 +8,7 @@ import {
   type Settings,
   type Tab,
   type ChatMessage,
+  type Project,
 } from "@vinny-editor/shared";
 import { env } from "./env.js";
 
@@ -34,6 +36,18 @@ db.exec(`
     role TEXT NOT NULL,
     content TEXT NOT NULL,
     created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS projects (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    path TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS app_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    active_project_id TEXT
   );
 `);
 
@@ -127,4 +141,52 @@ export function insertChatMessage(message: ChatMessage): void {
     message.content,
     message.createdAt,
   );
+}
+
+export function clearTabs(): void {
+  db.prepare("DELETE FROM tabs").run();
+}
+
+interface ProjectRow {
+  id: string;
+  name: string;
+  path: string;
+  created_at: string;
+}
+
+function rowToProject(row: ProjectRow): Project {
+  return { id: row.id, name: row.name, path: row.path, createdAt: row.created_at };
+}
+
+export function listProjects(): Project[] {
+  const rows = db.prepare("SELECT * FROM projects ORDER BY created_at ASC").all() as ProjectRow[];
+  return rows.map(rowToProject);
+}
+
+export function addProject(name: string, path: string): Project {
+  const project: Project = { id: randomUUID(), name, path, createdAt: new Date().toISOString() };
+  db.prepare("INSERT INTO projects (id, name, path, created_at) VALUES (?, ?, ?, ?)").run(
+    project.id,
+    project.name,
+    project.path,
+    project.createdAt,
+  );
+  return project;
+}
+
+export function removeProject(id: string): void {
+  db.prepare("DELETE FROM projects WHERE id = ?").run(id);
+}
+
+export function getActiveProjectId(): string | null {
+  const row = db.prepare("SELECT active_project_id FROM app_state WHERE id = 1").get() as
+    { active_project_id: string | null } | undefined;
+  return row?.active_project_id ?? null;
+}
+
+export function setActiveProjectId(id: string | null): void {
+  db.prepare(
+    `INSERT INTO app_state (id, active_project_id) VALUES (1, ?)
+     ON CONFLICT (id) DO UPDATE SET active_project_id = excluded.active_project_id`,
+  ).run(id);
 }

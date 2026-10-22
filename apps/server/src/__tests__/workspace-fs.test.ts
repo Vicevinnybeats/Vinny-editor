@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { PathTraversalError, resolveSafePath, WORKSPACE_ROOT } from "../workspace-fs.js";
+import { PathTraversalError, resolveSafePath, getWorkspaceRoot } from "../workspace-fs.js";
+
+const WORKSPACE_ROOT = getWorkspaceRoot();
 
 describe("resolveSafePath", () => {
   it("resolves a plain relative path inside the workspace", () => {

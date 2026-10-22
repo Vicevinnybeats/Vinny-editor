@@ -7,7 +7,15 @@ import websocketPlugin from "@fastify/websocket";
 import fastifyStatic from "@fastify/static";
 import { clientMessageSchema, type ServerMessage, type StateSnapshot } from "@vinny-editor/shared";
 import { requireAuth } from "./auth.js";
-import { getSettings, listChatMessages, listTabs } from "./db.js";
+import {
+  addProject,
+  getActiveProjectId,
+  getSettings,
+  listChatMessages,
+  listProjects,
+  listTabs,
+  setActiveProjectId,
+} from "./db.js";
 import { authRoutes } from "./routes/auth.js";
 import { fsRoutes } from "./routes/fs.js";
 import { tabsRoutes } from "./routes/tabs.js";
@@ -16,6 +24,7 @@ import { searchRoutes } from "./routes/search.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { chatRoutes } from "./routes/chat.js";
 import { execRoutes } from "./routes/exec.js";
+import { projectsRoutes } from "./routes/projects.js";
 import { registerSocket } from "./ws-hub.js";
 import {
   getTerminalBuffer,
@@ -24,12 +33,32 @@ import {
   writeTerminalInput,
 } from "./terminal.js";
 import { startWorkspaceWatcher } from "./watcher.js";
+import { getWorkspaceRoot, setWorkspaceRoot } from "./workspace-fs.js";
+
+/** On first boot there are no saved projects yet - seed one from the
+ * env-configured WORKSPACE_ROOT so existing setups keep working unchanged.
+ * On later boots, re-point the workspace root at whichever project was
+ * active last time (falling back to the first saved one if that project
+ * was since removed). */
+function ensureActiveProject() {
+  const projects = listProjects();
+  if (projects.length === 0) {
+    const seeded = addProject("Default", getWorkspaceRoot());
+    setActiveProjectId(seeded.id);
+    return;
+  }
+  const active = projects.find((p) => p.id === getActiveProjectId()) ?? projects[0];
+  setWorkspaceRoot(active.path);
+  if (getActiveProjectId() !== active.id) setActiveProjectId(active.id);
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const WEB_DIST = join(__dirname, "../../web/dist");
 
 export function buildServer() {
   const fastify = Fastify({ logger: true });
+
+  ensureActiveProject();
 
   fastify.register(cookie);
   fastify.register(websocketPlugin);
@@ -74,6 +103,7 @@ export function buildServer() {
       instance.register(settingsRoutes, { prefix: "/settings" });
       instance.register(chatRoutes, { prefix: "/chat" });
       instance.register(execRoutes, { prefix: "/exec" });
+      instance.register(projectsRoutes, { prefix: "/projects" });
     },
     { prefix: "/api" },
   );
@@ -90,6 +120,8 @@ export function buildServer() {
         chatHistory: listChatMessages(),
         terminalBuffer: getTerminalBuffer(),
         serverTime: new Date().toISOString(),
+        projects: listProjects(),
+        activeProjectId: getActiveProjectId(),
       };
       send(socket, snapshot);
 
