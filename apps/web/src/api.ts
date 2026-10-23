@@ -5,6 +5,7 @@ import type {
   Project,
   SearchMatch,
   Settings,
+  Skill,
   Tab,
 } from "@vinny-editor/shared";
 
@@ -165,4 +166,24 @@ export interface ConnectorsStatus {
 
 export const connectorsApi = {
   status: () => request<ConnectorsStatus>("/connectors/status"),
+};
+
+export const skillsApi = {
+  list: () => request<{ skills: Skill[] }>("/skills"),
+  add: (name: string, content: string) =>
+    request<{ skill: Skill }>("/skills", {
+      method: "POST",
+      body: JSON.stringify({ name, content }),
+    }),
+  fetchFromUrl: (url: string, path: string | undefined, name: string | undefined) =>
+    request<{ skill: Skill }>("/skills/fetch", {
+      method: "POST",
+      body: JSON.stringify({ url, path, name }),
+    }),
+  setEnabled: (id: string, enabled: boolean) =>
+    request<{ skills: Skill[] }>(`/skills/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
+    }),
+  remove: (id: string) => request<{ skills: Skill[] }>(`/skills/${id}`, { method: "DELETE" }),
 };

@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { ChatMessage } from "@vinny-editor/shared";
-import { getActiveProjectId, insertChatMessage, listChatMessages } from "./db.js";
+import {
+  getActiveProjectId,
+  insertChatMessage,
+  listChatMessages,
+  listEnabledSkills,
+} from "./db.js";
 import { streamOllamaChat, type OllamaMessage } from "./ollama.js";
 import { broadcast } from "./ws-hub.js";
 
@@ -38,10 +43,20 @@ export function sendUserMessage(content: string): {
   return { userMessage, assistantId };
 }
 
+/** Skills are standing instructions the user has added once and that apply
+ * to every project, not just the active one - folded into the system
+ * prompt on every reply rather than stored per-project. */
+function buildSystemPrompt(): string {
+  const skills = listEnabledSkills();
+  if (skills.length === 0) return SYSTEM_PROMPT;
+  const skillsText = skills.map((s) => `### Skill: ${s.name}\n${s.content}`).join("\n\n");
+  return `${SYSTEM_PROMPT}\n\nYou also have the following skills enabled for every project - follow them whenever relevant:\n\n${skillsText}`;
+}
+
 async function runAssistantReply(assistantId: string, projectId: string | null): Promise<void> {
   const history = listChatMessages(projectId);
   const messages: OllamaMessage[] = [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: buildSystemPrompt() },
     ...history.map((m) => ({ role: m.role, content: m.content }) satisfies OllamaMessage),
   ];
 

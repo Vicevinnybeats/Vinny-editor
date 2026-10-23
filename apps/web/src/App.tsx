@@ -11,10 +11,19 @@ import { ReposPanel } from "./components/ReposPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { SessionList } from "./components/SessionList";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { SkillsPanel } from "./components/SkillsPanel";
 import { TerminalPanel } from "./components/TerminalPanel";
 
 type RightTab =
-  "editor" | "changes" | "files" | "git" | "repos" | "connectors" | "search" | "settings";
+  | "editor"
+  | "changes"
+  | "files"
+  | "git"
+  | "repos"
+  | "connectors"
+  | "skills"
+  | "search"
+  | "settings";
 type MobileView = "chats" | "chat" | "panel";
 
 export function App() {
@@ -68,6 +77,8 @@ export function App() {
       <ReposPanel />
     ) : rightTab === "connectors" ? (
       <ConnectorsPanel />
+    ) : rightTab === "skills" ? (
+      <SkillsPanel />
     ) : rightTab === "search" ? (
       <SearchPanel onOpenFile={openFile} />
     ) : (
@@ -123,6 +134,7 @@ export function App() {
                 "git",
                 "repos",
                 "connectors",
+                "skills",
                 "search",
                 "settings",
               ] as RightTab[]

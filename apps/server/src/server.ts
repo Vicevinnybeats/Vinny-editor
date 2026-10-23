@@ -27,6 +27,7 @@ import { execRoutes } from "./routes/exec.js";
 import { githubRoutes } from "./routes/github.js";
 import { connectorsRoutes } from "./routes/connectors.js";
 import { projectsRoutes } from "./routes/projects.js";
+import { skillsRoutes } from "./routes/skills.js";
 import { registerSocket } from "./ws-hub.js";
 import {
   getTerminalBuffer,
@@ -109,6 +110,7 @@ export function buildServer() {
       instance.register(projectsRoutes, { prefix: "/projects" });
       instance.register(githubRoutes, { prefix: "/github" });
       instance.register(connectorsRoutes, { prefix: "/connectors" });
+      instance.register(skillsRoutes, { prefix: "/skills" });
     },
     { prefix: "/api" },
   );

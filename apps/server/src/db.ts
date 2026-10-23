@@ -9,6 +9,7 @@ import {
   type Tab,
   type ChatMessage,
   type Project,
+  type Skill,
 } from "@vinny-editor/shared";
 import { env } from "./env.js";
 
@@ -48,6 +49,15 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS app_state (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     active_project_id TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS skills (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    content TEXT NOT NULL,
+    source_url TEXT,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
   );
 `);
 
@@ -209,4 +219,59 @@ export function setActiveProjectId(id: string | null): void {
     `INSERT INTO app_state (id, active_project_id) VALUES (1, ?)
      ON CONFLICT (id) DO UPDATE SET active_project_id = excluded.active_project_id`,
   ).run(id);
+}
+
+interface SkillRow {
+  id: string;
+  name: string;
+  content: string;
+  source_url: string | null;
+  enabled: number;
+  created_at: string;
+}
+
+function rowToSkill(row: SkillRow): Skill {
+  return {
+    id: row.id,
+    name: row.name,
+    content: row.content,
+    sourceUrl: row.source_url,
+    enabled: row.enabled === 1,
+    createdAt: row.created_at,
+  };
+}
+
+/** Skills are global standing instructions, not scoped to a project - every
+ * chat, in every project, gets whichever ones are enabled folded into its
+ * system prompt. */
+export function listSkills(): Skill[] {
+  const rows = db.prepare("SELECT * FROM skills ORDER BY created_at ASC").all() as SkillRow[];
+  return rows.map(rowToSkill);
+}
+
+export function listEnabledSkills(): Skill[] {
+  return listSkills().filter((s) => s.enabled);
+}
+
+export function addSkill(name: string, content: string, sourceUrl: string | null): Skill {
+  const skill: Skill = {
+    id: randomUUID(),
+    name,
+    content,
+    sourceUrl,
+    enabled: true,
+    createdAt: new Date().toISOString(),
+  };
+  db.prepare(
+    "INSERT INTO skills (id, name, content, source_url, enabled, created_at) VALUES (?, ?, ?, ?, 1, ?)",
+  ).run(skill.id, skill.name, skill.content, skill.sourceUrl, skill.createdAt);
+  return skill;
+}
+
+export function setSkillEnabled(id: string, enabled: boolean): void {
+  db.prepare("UPDATE skills SET enabled = ? WHERE id = ?").run(enabled ? 1 : 0, id);
+}
+
+export function removeSkill(id: string): void {
+  db.prepare("DELETE FROM skills WHERE id = ?").run(id);
 }
