@@ -7,6 +7,7 @@ import { ConnectorsPanel } from "./components/ConnectorsPanel";
 import { EditorPanel } from "./components/EditorPanel";
 import { Explorer } from "./components/Explorer";
 import { GitPanel } from "./components/GitPanel";
+import { PreviewPanel } from "./components/PreviewPanel";
 import { ReposPanel } from "./components/ReposPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { SessionList } from "./components/SessionList";
@@ -16,6 +17,7 @@ import { TerminalPanel } from "./components/TerminalPanel";
 
 type RightTab =
   | "editor"
+  | "preview"
   | "changes"
   | "files"
   | "git"
@@ -67,6 +69,8 @@ export function App() {
         onSelectTab={setActivePath}
         onCloseTab={closeTab}
       />
+    ) : rightTab === "preview" ? (
+      <PreviewPanel />
     ) : rightTab === "changes" ? (
       <ChangesPanel />
     ) : rightTab === "files" ? (
@@ -129,6 +133,7 @@ export function App() {
             {(
               [
                 "editor",
+                "preview",
                 "changes",
                 "files",
                 "git",

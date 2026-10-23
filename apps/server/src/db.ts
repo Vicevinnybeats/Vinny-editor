@@ -80,6 +80,7 @@ function addColumnIfMissing(table: string, column: string, ddl: string) {
 }
 addColumnIfMissing("chat_messages", "project_id", "project_id TEXT");
 addColumnIfMissing("projects", "github_url", "github_url TEXT");
+addColumnIfMissing("projects", "preview_port", "preview_port INTEGER");
 
 export function getSettings(): Settings {
   const row = db.prepare("SELECT data FROM settings WHERE id = 1").get() as
@@ -182,6 +183,7 @@ interface ProjectRow {
   path: string;
   created_at: string;
   github_url: string | null;
+  preview_port: number | null;
 }
 
 function rowToProject(row: ProjectRow): Project {
@@ -191,6 +193,7 @@ function rowToProject(row: ProjectRow): Project {
     path: row.path,
     createdAt: row.created_at,
     githubUrl: row.github_url,
+    previewPort: row.preview_port,
   };
 }
 
@@ -206,11 +209,16 @@ export function addProject(name: string, path: string, githubUrl: string | null 
     path,
     createdAt: new Date().toISOString(),
     githubUrl,
+    previewPort: null,
   };
   db.prepare(
     "INSERT INTO projects (id, name, path, created_at, github_url) VALUES (?, ?, ?, ?, ?)",
   ).run(project.id, project.name, project.path, project.createdAt, project.githubUrl);
   return project;
+}
+
+export function setProjectPreviewPort(id: string, previewPort: number | null): void {
+  db.prepare("UPDATE projects SET preview_port = ? WHERE id = ?").run(previewPort, id);
 }
 
 export function removeProject(id: string): void {

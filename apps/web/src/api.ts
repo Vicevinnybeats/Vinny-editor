@@ -147,6 +147,11 @@ export const projectsApi = {
     request<{ projects: Project[]; activeProjectId: string | null }>(`/projects/${id}`, {
       method: "DELETE",
     }),
+  setPreviewPort: (id: string, port: number | null) =>
+    request<{ projects: Project[] }>(`/projects/${id}/preview-port`, {
+      method: "PUT",
+      body: JSON.stringify({ port }),
+    }),
 };
 
 export interface GithubRepo {

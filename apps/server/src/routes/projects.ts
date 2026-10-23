@@ -11,6 +11,7 @@ import {
   listProjects,
   removeProject,
   setActiveProjectId,
+  setProjectPreviewPort,
 } from "../db.js";
 import { CloneError, cloneRepo, createRepo, initAndPushNewRepo } from "../github.js";
 import { restartTerminal, runSetupScriptIfConfigured } from "../terminal.js";
@@ -26,6 +27,7 @@ const cloneBodySchema = z.object({
 });
 const switchBodySchema = z.object({ id: z.string() });
 const idParamSchema = z.object({ id: z.string() });
+const previewPortBodySchema = z.object({ port: z.number().int().positive().nullable() });
 
 function broadcastProjects() {
   broadcast({
@@ -121,6 +123,14 @@ export async function projectsRoutes(fastify: FastifyInstance) {
     }
     await activateProject(id);
     reply.send({ projects: listProjects(), activeProjectId: id });
+  });
+
+  fastify.put("/:id/preview-port", async (request, reply) => {
+    const { id } = idParamSchema.parse(request.params);
+    const { port } = previewPortBodySchema.parse(request.body);
+    setProjectPreviewPort(id, port);
+    broadcastProjects();
+    reply.send({ projects: listProjects() });
   });
 
   fastify.delete("/:id", async (request, reply) => {
