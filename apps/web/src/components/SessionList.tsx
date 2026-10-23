@@ -111,7 +111,11 @@ export function SessionList() {
 
   async function remove(id: string, event: MouseEvent) {
     event.stopPropagation();
-    if (!window.confirm("Remove this chat? (The folder itself is untouched.)")) return;
+    const isActive = id === activeProjectId;
+    const message = isActive
+      ? "Delete this chat? You'll be switched to another one. (The folder itself is untouched.)"
+      : "Delete this chat? (The folder itself is untouched.)";
+    if (!window.confirm(message)) return;
     await projectsApi.remove(id);
   }
 
@@ -194,16 +198,15 @@ export function SessionList() {
                   <span className="session-item-name">{project.name}</span>
                   <span className="session-item-path">{project.githubUrl ?? project.path}</span>
                 </span>
-                {project.id !== activeProjectId && (
-                  <span
-                    className="session-item-remove"
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => remove(project.id, e)}
-                  >
-                    ×
-                  </span>
-                )}
+                <span
+                  className="session-item-remove"
+                  role="button"
+                  tabIndex={0}
+                  title="Delete this chat"
+                  onClick={(e) => remove(project.id, e)}
+                >
+                  ×
+                </span>
               </button>
             </li>
           ))}

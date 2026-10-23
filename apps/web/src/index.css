@@ -398,16 +398,18 @@ textarea {
 
 .right-dock-tabs {
   display: flex;
+  overflow-x: auto;
   border-bottom: 1px solid var(--border);
 }
 
 .dock-tab {
-  flex: 1;
+  flex: 0 0 auto;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-muted);
-  padding: 10px 6px;
+  padding: 10px 10px;
+  white-space: nowrap;
   cursor: pointer;
   font-size: 12px;
   transition:
@@ -907,6 +909,103 @@ textarea {
   padding: 0 14px 14px;
   overflow-y: auto;
   flex: 1;
+}
+
+.connectors-panel,
+.repos-panel {
+  padding: 0 14px 14px;
+  overflow-y: auto;
+  flex: 1;
+}
+.connectors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.connector-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+.connector-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.connector-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+}
+.connector-dot-connected {
+  background: var(--ok);
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.6);
+}
+.connector-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.connector-row-name {
+  font-size: 13px;
+}
+.connector-row-detail {
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.connector-status {
+  font-size: 11px;
+  color: var(--danger);
+  flex-shrink: 0;
+}
+.connector-status-connected {
+  color: var(--ok);
+}
+.connector-row-hint {
+  font-size: 11px;
+  margin: 6px 0 0;
+}
+
+.repos-panel-error {
+  color: var(--danger);
+}
+.repos-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.repos-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+.repos-list-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.repos-list-name {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .git-group-title {
   font-size: 11px;

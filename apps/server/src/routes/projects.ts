@@ -102,9 +102,24 @@ export async function projectsRoutes(fastify: FastifyInstance) {
 
   fastify.delete("/:id", async (request, reply) => {
     const { id } = idParamSchema.parse(request.params);
+    const wasActive = getActiveProjectId() === id;
     removeProject(id);
-    if (getActiveProjectId() === id) setActiveProjectId(null);
-    broadcastProjects();
+
+    if (wasActive) {
+      // Deleting the chat you're currently in has to land you somewhere -
+      // otherwise the workspace root, terminal, and watcher all keep
+      // pointing at a project that no longer exists in the list.
+      const remaining = listProjects();
+      if (remaining.length > 0) {
+        await activateProject(remaining[0].id);
+      } else {
+        setActiveProjectId(null);
+        broadcastProjects();
+      }
+    } else {
+      broadcastProjects();
+    }
+
     reply.send({ projects: listProjects(), activeProjectId: getActiveProjectId() });
   });
 }

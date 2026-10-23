@@ -11,8 +11,11 @@ import type {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
     ...init,
+    headers: {
+      ...(init?.body !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...init?.headers,
+    },
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
@@ -87,7 +90,7 @@ export const gitApi = {
       method: "POST",
       body: JSON.stringify({ message }),
     }),
-  push: () => request<{ status: GitStatus }>("/git/push", { method: "POST", body: "{}" }),
+  push: () => request<{ status: GitStatus }>("/git/push", { method: "POST" }),
 };
 
 export const searchApi = {
@@ -153,4 +156,13 @@ export interface GithubRepo {
 
 export const githubApi = {
   listRepos: () => request<{ repos: GithubRepo[] }>("/github/repos"),
+};
+
+export interface ConnectorsStatus {
+  ollama: { connected: boolean; model: string; baseUrl: string };
+  github: { connected: boolean; hasToken: boolean };
+}
+
+export const connectorsApi = {
+  status: () => request<ConnectorsStatus>("/connectors/status"),
 };

@@ -3,15 +3,18 @@ import { tabsApi } from "./api";
 import { useConnection } from "./connection";
 import { ChangesPanel } from "./components/ChangesPanel";
 import { ChatPanel } from "./components/ChatPanel";
+import { ConnectorsPanel } from "./components/ConnectorsPanel";
 import { EditorPanel } from "./components/EditorPanel";
 import { Explorer } from "./components/Explorer";
 import { GitPanel } from "./components/GitPanel";
+import { ReposPanel } from "./components/ReposPanel";
 import { SearchPanel } from "./components/SearchPanel";
 import { SessionList } from "./components/SessionList";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { TerminalPanel } from "./components/TerminalPanel";
 
-type RightTab = "editor" | "changes" | "files" | "git" | "search" | "settings";
+type RightTab =
+  "editor" | "changes" | "files" | "git" | "repos" | "connectors" | "search" | "settings";
 type MobileView = "chats" | "chat" | "panel";
 
 export function App() {
@@ -61,6 +64,10 @@ export function App() {
       <Explorer onOpenFile={openFile} />
     ) : rightTab === "git" ? (
       <GitPanel />
+    ) : rightTab === "repos" ? (
+      <ReposPanel />
+    ) : rightTab === "connectors" ? (
+      <ConnectorsPanel />
     ) : rightTab === "search" ? (
       <SearchPanel onOpenFile={openFile} />
     ) : (
@@ -108,17 +115,26 @@ export function App() {
 
         <aside className={`right-dock${mobileView === "panel" ? " mobile-visible" : ""}`}>
           <div className="right-dock-tabs">
-            {(["editor", "changes", "files", "git", "search", "settings"] as RightTab[]).map(
-              (tab) => (
-                <button
-                  key={tab}
-                  className={`dock-tab${rightTab === tab ? " dock-tab-active" : ""}`}
-                  onClick={() => setRightTab(tab)}
-                >
-                  {tab[0].toUpperCase() + tab.slice(1)}
-                </button>
-              ),
-            )}
+            {(
+              [
+                "editor",
+                "changes",
+                "files",
+                "git",
+                "repos",
+                "connectors",
+                "search",
+                "settings",
+              ] as RightTab[]
+            ).map((tab) => (
+              <button
+                key={tab}
+                className={`dock-tab${rightTab === tab ? " dock-tab-active" : ""}`}
+                onClick={() => setRightTab(tab)}
+              >
+                {tab[0].toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
           </div>
           <div className="right-dock-body">{rightPanel}</div>
         </aside>
