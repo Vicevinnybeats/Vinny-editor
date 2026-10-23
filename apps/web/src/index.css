@@ -593,26 +593,42 @@ textarea {
     transform: rotate(360deg);
   }
 }
-.thinking-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent-warm);
-  box-shadow: 0 0 8px rgba(251, 146, 60, 0.6);
-  animation: thinking-pulse 1.1s ease-in-out infinite;
-  flex-shrink: 0;
+.thinking-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-@keyframes thinking-pulse {
+.thinking-logo {
+  width: 16px;
+  height: 16px;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  background: linear-gradient(135deg, var(--accent), var(--accent-purple));
+  color: #04141a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  flex-shrink: 0;
+  animation: thinking-logo-pulse 1.4s ease-in-out infinite;
+}
+@keyframes thinking-logo-pulse {
   0%,
   100% {
-    opacity: 0.35;
-    transform: scale(0.85);
+    opacity: 0.6;
+    transform: scale(0.9) rotate(0deg);
   }
   50% {
     opacity: 1;
-    transform: scale(1.15);
+    transform: scale(1.05) rotate(180deg);
   }
+}
+.thinking-word {
+  display: inline-block;
+  animation: fade-slide-in 0.3s ease;
+}
+.chat-status-elapsed {
+  color: var(--text-muted);
 }
 .chat-messages {
   flex: 1;

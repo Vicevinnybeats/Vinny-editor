@@ -89,6 +89,22 @@ export function SettingsPanel() {
         </span>
       </label>
 
+      <label className="field field-checkbox">
+        <input
+          type="checkbox"
+          checked={settings.autoCommitAndPush}
+          onChange={(e) => save({ ...settings, autoCommitAndPush: e.target.checked })}
+        />
+        <span>
+          Auto-commit and push approved edits
+          <small className="muted field-hint">
+            Standard on every project - as soon as an edit is approved, it's also committed and
+            pushed to GitHub, so it's not just sitting on disk. Turn off to keep it staged locally
+            for you to commit yourself. Has no effect on a plain local folder with no git remote.
+          </small>
+        </span>
+      </label>
+
       <label className="field">
         <span>GitHub personal access token</span>
         <input

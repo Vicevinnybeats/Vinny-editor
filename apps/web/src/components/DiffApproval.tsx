@@ -2,7 +2,7 @@ import { DiffEditor } from "@monaco-editor/react";
 import { diffLines } from "diff";
 import { useEffect, useMemo, useState } from "react";
 import type { ProposedEdit } from "@vinny-editor/shared";
-import { fsApi } from "../api";
+import { fsApi, gitApi } from "../api";
 import { useConnection } from "../connection";
 
 function countLines(text: string): number {
@@ -42,6 +42,20 @@ export function DiffApproval({ edit }: { edit: ProposedEdit }) {
       setExpanded(false);
     } catch {
       setStatus("error");
+      return;
+    }
+    // Standard on every project: an approved edit should actually reach
+    // GitHub, not just sit on disk. Best-effort - a plain local folder with
+    // no git repo (or no remote) just silently has nothing to push.
+    if (settings?.autoCommitAndPush) {
+      try {
+        await gitApi.stage(edit.path);
+        await gitApi.commit(`Vinny: update ${edit.path}`);
+        await gitApi.push();
+      } catch {
+        // Not a git repo, no changes to commit, or push failed - the file
+        // write itself already succeeded, so there's nothing more to do here.
+      }
     }
   }
 

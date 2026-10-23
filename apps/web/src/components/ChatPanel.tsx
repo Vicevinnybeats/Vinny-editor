@@ -8,6 +8,7 @@ import {
 import { chatApi, fsApi } from "../api";
 import { useConnection } from "../connection";
 import { FileAttachMenu } from "./FileAttachMenu";
+import { ThinkingIndicator } from "./ThinkingIndicator";
 
 function useElapsedSeconds(active: boolean): number {
   const [seconds, setSeconds] = useState(0);
@@ -157,8 +158,8 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
       <div className="chat-progress">{isStreaming && <div className="chat-progress-bar" />}</div>
       {isStreaming && (
         <div className="chat-status">
-          <span className="thinking-dot" />
-          Generating... {elapsed}s
+          <ThinkingIndicator />
+          <span className="chat-status-elapsed">{elapsed}s</span>
         </div>
       )}
       <div className="chat-messages" ref={listRef}>
@@ -176,11 +177,6 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
               <div key={message.id} className={`chat-message chat-message-${message.role}`}>
                 <div className="chat-message-role">{message.role === "user" ? "You" : "Vinny"}</div>
                 {text && <div className="chat-message-body">{text}</div>}
-                {message.pending && !text && (
-                  <div className="chat-message-body muted">
-                    <span className="thinking-dot" /> Thinking...
-                  </div>
-                )}
                 {(edits.length > 0 || commands.length > 0) && (
                   <button className="action-summary" onClick={onViewChanges}>
                     {edits.map((edit) => (

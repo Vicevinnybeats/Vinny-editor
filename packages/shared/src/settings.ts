@@ -4,6 +4,7 @@ export const settingsSchema = z.object({
   theme: z.enum(["light", "dark", "system"]).default("system"),
   ollamaModel: z.string().default("qwen3"),
   autoApproveEdits: z.boolean().default(false),
+  autoCommitAndPush: z.boolean().default(true),
   githubToken: z.string().default(""),
   // A standard environment applied to every project: these variables are
   // exported into every project's terminal and command runs, and the setup
