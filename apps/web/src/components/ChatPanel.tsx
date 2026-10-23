@@ -105,8 +105,19 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const innerRef = useStickToBottom(listRef);
+  const draftRef = useRef<HTMLTextAreaElement>(null);
   const isStreaming = sending || chatMessages.some((m) => m.pending);
   const elapsed = useElapsedSeconds(isStreaming);
+
+  // Grows the input to fit what's typed or pasted (up to a cap set in CSS),
+  // so a long paste is readable in place instead of hidden behind a
+  // two-line scrollbox.
+  useEffect(() => {
+    const el = draftRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft]);
 
   function attachFile(path: string) {
     setAttachedFiles((prev) => (prev.includes(path) ? prev : [...prev, path]));
@@ -230,6 +241,7 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
             +
           </button>
           <textarea
+            ref={draftRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Message Vinny..."

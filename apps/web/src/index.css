@@ -697,6 +697,8 @@ textarea {
   border-radius: var(--radius);
   color: var(--text);
   padding: 8px;
+  max-height: 50vh;
+  overflow-y: auto;
 }
 .chat-attachments {
   display: flex;
