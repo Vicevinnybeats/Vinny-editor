@@ -6,12 +6,13 @@ import {
   addProject,
   clearTabs,
   getActiveProjectId,
+  getSettings,
   listChatMessages,
   listProjects,
   removeProject,
   setActiveProjectId,
 } from "../db.js";
-import { CloneError, cloneRepo } from "../github.js";
+import { CloneError, cloneRepo, createRepo, initAndPushNewRepo } from "../github.js";
 import { restartTerminal } from "../terminal.js";
 import { restartWorkspaceWatcher } from "../watcher.js";
 import { broadcast } from "../ws-hub.js";
@@ -73,7 +74,28 @@ export async function projectsRoutes(fastify: FastifyInstance) {
       reply.code(400).send({ error: "That path isn't a folder." });
       return;
     }
-    const project = addProject(name, resolved);
+    const token = getSettings().githubToken;
+    if (!token) {
+      reply.code(400).send({
+        error:
+          "Add a GitHub personal access token in Settings first - new chats are synced to GitHub automatically.",
+      });
+      return;
+    }
+
+    let githubUrl: string;
+    try {
+      const repo = await createRepo(name, token, true);
+      await initAndPushNewRepo(resolved, repo.cloneUrl, token);
+      githubUrl = repo.htmlUrl;
+    } catch (err) {
+      reply.code(400).send({
+        error: err instanceof CloneError ? err.message : "Couldn't set up the GitHub repo.",
+      });
+      return;
+    }
+
+    const project = addProject(name, resolved, githubUrl);
     await activateProject(project.id);
     reply.send({ project });
   });

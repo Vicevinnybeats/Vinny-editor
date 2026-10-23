@@ -1,6 +1,7 @@
 import { exec } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { simpleGit } from "simple-git";
 import { env } from "./env.js";
 
 const CLONE_TIMEOUT_MS = 5 * 60_000;
@@ -41,6 +42,111 @@ function sanitizeMessage(message: string): string {
 export interface ClonedProject {
   name: string;
   path: string;
+}
+
+export interface CreatedRepo {
+  htmlUrl: string;
+  cloneUrl: string;
+}
+
+/** Creates a new repo on the signed-in user's GitHub account (Vicevinnybeats,
+ * or whoever the token belongs to) - used so a brand-new "Local folder" chat
+ * lands on GitHub automatically instead of staying local-only. */
+export async function createRepo(
+  name: string,
+  token: string,
+  isPrivate: boolean,
+): Promise<CreatedRepo> {
+  const repoName = sanitizeName(name);
+  let response: Response;
+  try {
+    response = await fetch("https://api.github.com/user/repos", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "User-Agent": "vinny-editor",
+      },
+      body: JSON.stringify({ name: repoName, private: isPrivate }),
+    });
+  } catch {
+    throw new CloneError("Couldn't reach GitHub to create the repo.");
+  }
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { message?: string };
+    if (response.status === 401) {
+      throw new CloneError("That GitHub token was rejected - check it in Settings.");
+    }
+    throw new CloneError(
+      body.message
+        ? `GitHub rejected that repo: ${body.message}`
+        : `Couldn't create the GitHub repo (GitHub returned ${response.status}).`,
+    );
+  }
+
+  const data = (await response.json()) as { html_url: string; clone_url: string };
+  return { htmlUrl: data.html_url, cloneUrl: data.clone_url };
+}
+
+/** Turns a plain local folder into a git repo (if it isn't one already),
+ * points it at a freshly-created GitHub repo, and pushes whatever's there.
+ * An empty folder is left with no commits - the GitHub repo still exists
+ * and is linked, there's just nothing to push yet. */
+export async function initAndPushNewRepo(
+  localPath: string,
+  cloneUrl: string,
+  token: string,
+): Promise<void> {
+  let authedUrl: string;
+  try {
+    const parsed = new URL(cloneUrl);
+    parsed.username = token;
+    authedUrl = parsed.toString();
+  } catch {
+    throw new CloneError("That doesn't look like a valid repo URL.");
+  }
+
+  const git = simpleGit(localPath);
+  try {
+    if (!(await git.checkIsRepo())) {
+      await git.init();
+    }
+
+    const remotes = await git.getRemotes();
+    if (remotes.some((r) => r.name === "origin")) {
+      await git.remote(["set-url", "origin", authedUrl]);
+    } else {
+      await git.addRemote("origin", authedUrl);
+    }
+
+    let hasCommit = true;
+    try {
+      await git.raw(["rev-parse", "HEAD"]);
+    } catch {
+      hasCommit = false;
+    }
+
+    if (!hasCommit) {
+      await git.add(".");
+      await git.commit("Initial commit");
+      try {
+        await git.raw(["rev-parse", "HEAD"]);
+      } catch {
+        // Empty folder - commit() no-ops instead of throwing. Leave it
+        // linked but empty rather than pushing a branch that doesn't exist.
+        return;
+      }
+    }
+
+    const branch = (await git.status()).current || "main";
+    await git.push(["-u", "origin", branch]);
+  } catch (err) {
+    throw new CloneError(
+      sanitizeMessage(err instanceof Error ? err.message : "Couldn't set up git for this project."),
+    );
+  }
 }
 
 /** Clones a git repo (GitHub or otherwise) over HTTPS into a managed folder

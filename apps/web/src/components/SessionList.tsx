@@ -42,7 +42,10 @@ export function SessionList() {
   async function addLocal() {
     setMenuOpen(false);
     const path = window
-      .prompt("Full path to the project folder on this PC (e.g. C:\\Users\\VInny\\my-project):")
+      .prompt(
+        "Full path to the project folder on this PC (e.g. C:\\Users\\VInny\\my-project). " +
+          "This also creates a private GitHub repo for it and pushes it there:",
+      )
       ?.trim();
     if (!path) return;
     const suggestedName = path.split(/[\\/]/).filter(Boolean).pop() ?? path;
