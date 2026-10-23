@@ -3,6 +3,7 @@ import { diffLines } from "diff";
 import { useEffect, useMemo, useState } from "react";
 import type { ProposedEdit } from "@vinny-editor/shared";
 import { fsApi, gitApi } from "../api";
+import { markAutoApplied, wasAlreadyAutoApplied } from "../autoApproveGuard";
 import { useConnection } from "../connection";
 
 function countLines(text: string): number {
@@ -10,12 +11,15 @@ function countLines(text: string): number {
   return text.endsWith("\n") ? text.split("\n").length - 1 : text.split("\n").length;
 }
 
-export function DiffApproval({ edit }: { edit: ProposedEdit }) {
+export function DiffApproval({ id, edit }: { id: string; edit: ProposedEdit }) {
   const { settings } = useConnection();
   const autoApprove = settings?.autoApproveEdits ?? false;
+  const alreadyApplied = wasAlreadyAutoApplied(id);
   const [original, setOriginal] = useState<string | null>(null);
-  const [status, setStatus] = useState<"pending" | "applied" | "rejected" | "error">("pending");
-  const [expanded, setExpanded] = useState(!autoApprove);
+  const [status, setStatus] = useState<"pending" | "applied" | "rejected" | "error">(
+    alreadyApplied ? "applied" : "pending",
+  );
+  const [expanded, setExpanded] = useState(!autoApprove && !alreadyApplied);
 
   useEffect(() => {
     fsApi
@@ -64,9 +68,16 @@ export function DiffApproval({ edit }: { edit: ProposedEdit }) {
     setExpanded(false);
   }
 
-  // Intentionally only on mount - auto-approve decides once per proposed edit.
+  // Intentionally only on mount - auto-approve decides once per proposed
+  // edit. Skipped entirely if this exact edit was already auto-applied in
+  // an earlier mount (e.g. a page refresh re-rendering the whole chat
+  // history) - otherwise every reload would silently re-write, re-commit,
+  // and re-push every edit ever proposed in the conversation.
   useEffect(() => {
-    if (autoApprove) void approve();
+    if (autoApprove && !alreadyApplied) {
+      markAutoApplied(id);
+      void approve();
+    }
   }, []);
 
   const verb = status === "applied" ? "Edited" : status === "rejected" ? "Edit skipped" : "Edit";

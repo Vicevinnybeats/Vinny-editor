@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import type { ProposedCommand } from "@vinny-editor/shared";
 import { execApi, type CommandResult } from "../api";
+import { markAutoApplied, wasAlreadyAutoApplied } from "../autoApproveGuard";
 import { useConnection } from "../connection";
 
-export function CommandApproval({ command }: { command: ProposedCommand }) {
+export function CommandApproval({ id, command }: { id: string; command: ProposedCommand }) {
   const { settings } = useConnection();
   const autoApprove = settings?.autoApproveEdits ?? false;
+  const alreadyApplied = wasAlreadyAutoApplied(id);
   const [status, setStatus] = useState<"pending" | "running" | "done" | "rejected" | "error">(
-    "pending",
+    alreadyApplied ? "done" : "pending",
   );
   const [result, setResult] = useState<CommandResult | null>(null);
-  const [expanded, setExpanded] = useState(!autoApprove);
+  const [expanded, setExpanded] = useState(!autoApprove && !alreadyApplied);
 
   async function approve() {
     setStatus("running");
@@ -28,9 +30,15 @@ export function CommandApproval({ command }: { command: ProposedCommand }) {
     setExpanded(false);
   }
 
-  // Intentionally only on mount - auto-approve decides once per proposed command.
+  // Intentionally only on mount - auto-approve decides once per proposed
+  // command. Skipped if this exact command was already auto-run in an
+  // earlier mount (e.g. a page refresh), so a reload never re-runs a shell
+  // command like "npm install" or "npm start" a second (or fifteenth) time.
   useEffect(() => {
-    if (autoApprove) void approve();
+    if (autoApprove && !alreadyApplied) {
+      markAutoApplied(id);
+      void approve();
+    }
   }, []);
 
   const verb =

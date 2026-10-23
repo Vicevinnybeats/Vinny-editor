@@ -9,10 +9,12 @@ function collectItems(chatMessages: ChatMessage[]): ReactNode[] {
   for (const message of chatMessages) {
     if (message.role !== "assistant") continue;
     for (const edit of parseProposedEdits(message.content)) {
-      items.push(<DiffApproval key={`${message.id}-edit-${edit.path}`} edit={edit} />);
+      const id = `${message.id}-edit-${edit.path}`;
+      items.push(<DiffApproval key={id} id={id} edit={edit} />);
     }
     parseProposedCommands(message.content).forEach((command, i) => {
-      items.push(<CommandApproval key={`${message.id}-cmd-${i}`} command={command} />);
+      const id = `${message.id}-cmd-${i}`;
+      items.push(<CommandApproval key={id} id={id} command={command} />);
     });
   }
   return items;
