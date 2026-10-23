@@ -1,8 +1,10 @@
 @echo off
+setlocal enabledelayedexpansion
 REM Double-click this file to start Ollama, Vinny Editor, and a public
-REM Cloudflare tunnel in one go - no manual commands needed. Requires
-REM cloudflared.exe to already be in this same folder (see README for how
-REM to get it), and Ollama to already be installed.
+REM tunnel in one go - no manual commands needed. Requires Ollama to already
+REM be installed, and either ngrok.exe (for a permanent address - see the
+REM README's "Permanent address" section) or cloudflared.exe (rotating
+REM address, zero setup) in this same folder.
 
 cd /d "%~dp0"
 
@@ -41,10 +43,26 @@ start "Vinny Editor - Server" cmd /k "npm run --workspace @vinny-editor/server s
 echo Waiting a few seconds for it to come up...
 timeout /t 5 /nobreak >nul
 
+if exist "%~dp0ngrok.exe" if exist "%~dp0ngrok-domain.txt" (
+  set /p NGROK_DOMAIN=<"%~dp0ngrok-domain.txt"
+  echo Starting the ngrok tunnel at https://!NGROK_DOMAIN!...
+  start "Vinny Editor - Tunnel" cmd /k "ngrok.exe http 4310 --domain=!NGROK_DOMAIN!"
+  echo.
+  echo Done. These windows just opened (keep them all open):
+  echo   - "Vinny Editor - Ollama"  : only if it wasn't already running - the AI model engine
+  echo   - "Vinny Editor - Server"  : the app itself
+  echo   - "Vinny Editor - Tunnel"  : your permanent address is https://!NGROK_DOMAIN!
+  echo.
+  echo This window can be closed.
+  pause
+  exit /b 0
+)
+
 if not exist "%~dp0cloudflared.exe" (
   echo.
-  echo cloudflared.exe not found in this folder - skipping the tunnel.
+  echo No tunnel tool found in this folder - skipping the tunnel.
   echo The app is still running locally at http://localhost:4310
+  echo See the README's "Permanent address" section for a one-time ngrok setup.
   pause
   exit /b 0
 )
@@ -57,6 +75,8 @@ echo Done. These windows just opened (keep them all open):
 echo   - "Vinny Editor - Ollama"  : only if it wasn't already running - the AI model engine
 echo   - "Vinny Editor - Server"  : the app itself
 echo   - "Vinny Editor - Tunnel"  : look here for your public https://...trycloudflare.com link
+echo     (this link changes every time you start it - see the README's
+echo     "Permanent address" section to stop that from happening)
 echo.
 echo This window can be closed.
 pause

@@ -105,6 +105,33 @@ Windows, use `start-windows.bat` at the repo root instead:
 
 Both windows need to stay open while you're using it remotely.
 
+### Permanent address (so your phone/PWA link never breaks)
+
+A Quick Tunnel's URL is random and changes every time you start it - fine for
+a quick test, annoying if you've saved it to your phone's home screen. To
+get an address that never changes, swap it for **ngrok's free static
+domain** instead:
+
+1. Sign up free at [ngrok.com](https://ngrok.com) and download `ngrok.exe`
+   for Windows.
+2. In the ngrok dashboard, run the one-time `ngrok config add-authtoken ...`
+   command it shows you (in a terminal, in the folder with `ngrok.exe`).
+3. In the dashboard under **Universal Gateway → Domains**, click **+ Create
+   Domain** to claim a free static domain - something like
+   `yourname.ngrok-free.app`. This is now permanently yours.
+4. Put `ngrok.exe` in the repo root (next to `start-windows.bat`), and create
+   a plain text file there named `ngrok-domain.txt` containing just that
+   domain, e.g. `yourname.ngrok-free.app` (no `https://`, no quotes).
+5. Run `start-windows.bat` as usual - it automatically uses ngrok with your
+   fixed domain instead of the rotating Cloudflare link whenever both
+   `ngrok.exe` and `ngrok-domain.txt` are present. Nothing else changes.
+
+Your phone's bookmark/home-screen shortcut only needs updating once, to this
+new fixed address - it'll keep working across every future restart.
+
+(On Mac/Linux, run `ngrok http 4310 --domain=yourname.ngrok-free.app`
+directly instead of `npm run tunnel`.)
+
 ## Security notes
 
 - The server is sandboxed to `WORKSPACE_ROOT`; every filesystem path is
