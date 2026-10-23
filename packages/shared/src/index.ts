@@ -7,3 +7,4 @@ export * from "./git.js";
 export * from "./search.js";
 export * from "./projects.js";
 export * from "./skills.js";
+export * from "./connectors.js";

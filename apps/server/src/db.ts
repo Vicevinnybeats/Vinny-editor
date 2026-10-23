@@ -10,6 +10,7 @@ import {
   type ChatMessage,
   type Project,
   type Skill,
+  type CustomConnector,
 } from "@vinny-editor/shared";
 import { env } from "./env.js";
 
@@ -57,6 +58,14 @@ db.exec(`
     content TEXT NOT NULL,
     source_url TEXT,
     enabled INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS connectors (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    token TEXT,
     created_at TEXT NOT NULL
   );
 `);
@@ -274,4 +283,46 @@ export function setSkillEnabled(id: string, enabled: boolean): void {
 
 export function removeSkill(id: string): void {
   db.prepare("DELETE FROM skills WHERE id = ?").run(id);
+}
+
+interface ConnectorRow {
+  id: string;
+  name: string;
+  url: string;
+  token: string | null;
+  created_at: string;
+}
+
+export function listConnectors(): CustomConnector[] {
+  const rows = db
+    .prepare("SELECT * FROM connectors ORDER BY created_at ASC")
+    .all() as ConnectorRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    url: row.url,
+    hasToken: Boolean(row.token),
+    createdAt: row.created_at,
+  }));
+}
+
+/** The token is kept server-side only - never returned to the client,
+ * unlike the public fields above which the Connectors tab displays. */
+export function getConnectorAuth(id: string): { url: string; token: string | null } | null {
+  const row = db.prepare("SELECT url, token FROM connectors WHERE id = ?").get(id) as
+    { url: string; token: string | null } | undefined;
+  return row ?? null;
+}
+
+export function addConnector(name: string, url: string, token: string | null): CustomConnector {
+  const id = randomUUID();
+  const createdAt = new Date().toISOString();
+  db.prepare(
+    "INSERT INTO connectors (id, name, url, token, created_at) VALUES (?, ?, ?, ?, ?)",
+  ).run(id, name, url, token, createdAt);
+  return { id, name, url, hasToken: Boolean(token), createdAt };
+}
+
+export function removeConnector(id: string): void {
+  db.prepare("DELETE FROM connectors WHERE id = ?").run(id);
 }

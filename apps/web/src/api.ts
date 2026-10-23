@@ -1,5 +1,6 @@
 import type {
   ChatMessage,
+  CustomConnector,
   FileEntry,
   GitStatus,
   Project,
@@ -164,8 +165,18 @@ export interface ConnectorsStatus {
   github: { connected: boolean; hasToken: boolean };
 }
 
+export type CustomConnectorWithStatus = CustomConnector & { connected: boolean };
+
 export const connectorsApi = {
   status: () => request<ConnectorsStatus>("/connectors/status"),
+  listCustom: () => request<{ connectors: CustomConnectorWithStatus[] }>("/connectors/custom"),
+  addCustom: (name: string, url: string, token: string | undefined) =>
+    request<{ connector: CustomConnector }>("/connectors/custom", {
+      method: "POST",
+      body: JSON.stringify({ name, url, token }),
+    }),
+  removeCustom: (id: string) =>
+    request<{ ok: true }>(`/connectors/custom/${id}`, { method: "DELETE" }),
 };
 
 export const skillsApi = {

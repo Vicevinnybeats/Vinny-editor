@@ -935,6 +935,10 @@ textarea {
   overflow-y: auto;
   flex: 1;
 }
+.connectors-panel-actions {
+  display: flex;
+  gap: 6px;
+}
 .connectors-list {
   display: flex;
   flex-direction: column;
