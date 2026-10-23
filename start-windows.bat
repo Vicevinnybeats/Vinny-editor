@@ -43,33 +43,36 @@ start "Vinny Editor - Server" cmd /k "npm run --workspace @vinny-editor/server s
 echo Waiting a few seconds for it to come up...
 timeout /t 5 /nobreak >nul
 
-if exist "%~dp0ngrok.exe" if exist "%~dp0ngrok-domain.txt" (
-  set /p NGROK_DOMAIN=<"%~dp0ngrok-domain.txt"
-  echo Starting the ngrok tunnel at https://!NGROK_DOMAIN!...
-  start "Vinny Editor - Tunnel" cmd /k "ngrok.exe http 4310 --domain=!NGROK_DOMAIN!"
-  echo.
-  echo Done. These windows just opened (keep them all open):
-  echo   - "Vinny Editor - Ollama"  : only if it wasn't already running - the AI model engine
-  echo   - "Vinny Editor - Server"  : the app itself
-  echo   - "Vinny Editor - Tunnel"  : your permanent address is https://!NGROK_DOMAIN!
-  echo.
-  echo This window can be closed.
-  pause
-  exit /b 0
-)
+set "HAS_NGROK_EXE=0"
+set "HAS_NGROK_DOMAIN=0"
+if exist "%~dp0ngrok.exe" set "HAS_NGROK_EXE=1"
+if exist "%~dp0ngrok-domain.txt" set "HAS_NGROK_DOMAIN=1"
+echo.
+echo Checking for a permanent address (ngrok)...
+echo   ngrok.exe found:         %HAS_NGROK_EXE%  (1 = yes, 0 = no)
+echo   ngrok-domain.txt found:  %HAS_NGROK_DOMAIN%  (1 = yes, 0 = no)
 
-if not exist "%~dp0cloudflared.exe" (
-  echo.
-  echo No tunnel tool found in this folder - skipping the tunnel.
-  echo The app is still running locally at http://localhost:4310
-  echo See the README's "Permanent address" section for a one-time ngrok setup.
-  pause
-  exit /b 0
-)
+if "%HAS_NGROK_EXE%"=="1" if "%HAS_NGROK_DOMAIN%"=="1" goto :start_ngrok
+if exist "%~dp0cloudflared.exe" goto :start_cloudflared
+goto :no_tunnel
 
+:start_ngrok
+set /p NGROK_DOMAIN=<"%~dp0ngrok-domain.txt"
+echo Starting the ngrok tunnel at https://!NGROK_DOMAIN!...
+start "Vinny Editor - Tunnel" cmd /k "ngrok.exe http 4310 --domain=!NGROK_DOMAIN!"
+echo.
+echo Done. These windows just opened (keep them all open):
+echo   - "Vinny Editor - Ollama"  : only if it wasn't already running - the AI model engine
+echo   - "Vinny Editor - Server"  : the app itself
+echo   - "Vinny Editor - Tunnel"  : your permanent address is https://!NGROK_DOMAIN!
+echo.
+echo This window can be closed.
+pause
+exit /b 0
+
+:start_cloudflared
 echo Starting the Cloudflare tunnel in a new window...
 start "Vinny Editor - Tunnel" cmd /k "cloudflared.exe tunnel --url http://localhost:4310"
-
 echo.
 echo Done. These windows just opened (keep them all open):
 echo   - "Vinny Editor - Ollama"  : only if it wasn't already running - the AI model engine
@@ -80,3 +83,12 @@ echo     "Permanent address" section to stop that from happening)
 echo.
 echo This window can be closed.
 pause
+exit /b 0
+
+:no_tunnel
+echo.
+echo No tunnel tool found in this folder - skipping the tunnel.
+echo The app is still running locally at http://localhost:4310
+echo See the README's "Permanent address" section for a one-time ngrok setup.
+pause
+exit /b 0
