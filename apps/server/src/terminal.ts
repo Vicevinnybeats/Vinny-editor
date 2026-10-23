@@ -1,4 +1,5 @@
 import * as pty from "node-pty";
+import { getSettings } from "./db.js";
 import { getWorkspaceRoot } from "./workspace-fs.js";
 import { broadcast } from "./ws-hub.js";
 
@@ -30,7 +31,7 @@ function ensureTerminal(): pty.IPty | null {
       cols: 80,
       rows: 24,
       cwd: getWorkspaceRoot(),
-      env: process.env as Record<string, string>,
+      env: { ...process.env, ...getSettings().environmentVariables } as Record<string, string>,
     });
   } catch (err) {
     console.error("Failed to start terminal shell:", err instanceof Error ? err.message : err);
@@ -79,4 +80,14 @@ export function restartTerminal(): void {
   }
   outputBuffer = "";
   ensureTerminal();
+}
+
+/** Types the saved setup script into the (already-restarted) terminal, as if
+ * the user had typed it themselves - runs it in the new active project's
+ * shell, with the saved environment variables already in scope. Called on
+ * every project switch, so it should be safe to run more than once. */
+export function runSetupScriptIfConfigured(): void {
+  const script = getSettings().setupScript.trim();
+  if (!script) return;
+  ensureTerminal()?.write(`${script}\r`);
 }

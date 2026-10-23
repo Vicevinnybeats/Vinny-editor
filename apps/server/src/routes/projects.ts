@@ -13,7 +13,7 @@ import {
   setActiveProjectId,
 } from "../db.js";
 import { CloneError, cloneRepo, createRepo, initAndPushNewRepo } from "../github.js";
-import { restartTerminal } from "../terminal.js";
+import { restartTerminal, runSetupScriptIfConfigured } from "../terminal.js";
 import { restartWorkspaceWatcher } from "../watcher.js";
 import { broadcast } from "../ws-hub.js";
 import { setWorkspaceRoot } from "../workspace-fs.js";
@@ -49,6 +49,7 @@ async function activateProject(id: string): Promise<void> {
   clearTabs();
   await restartWorkspaceWatcher();
   restartTerminal();
+  runSetupScriptIfConfigured();
   setActiveProjectId(id);
 
   broadcast({ type: "tabs:changed", tabs: [] });

@@ -2,12 +2,37 @@ import { useEffect, useState } from "react";
 import type { Settings } from "@vinny-editor/shared";
 import { authApi, settingsApi } from "../api";
 
+/** environmentVariables is a Record in Settings, but a user edits it as
+ * plain "KEY=VALUE" lines - these two just go back and forth between
+ * the two shapes. */
+function envVarsToText(vars: Record<string, string>): string {
+  return Object.entries(vars)
+    .map(([k, v]) => `${k}=${v}`)
+    .join("\n");
+}
+
+function textToEnvVars(text: string): Record<string, string> {
+  const vars: Record<string, string> = {};
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    vars[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
+  }
+  return vars;
+}
+
 export function SettingsPanel() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
+  const [envVarsText, setEnvVarsText] = useState("");
 
   useEffect(() => {
-    void settingsApi.get().then(setSettings);
+    void settingsApi.get().then((s) => {
+      setSettings(s);
+      setEnvVarsText(envVarsToText(s.environmentVariables));
+    });
   }, []);
 
   async function save(next: Settings) {
@@ -15,6 +40,11 @@ export function SettingsPanel() {
     await settingsApi.update(next);
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
+  }
+
+  function saveEnvVars() {
+    if (!settings) return;
+    save({ ...settings, environmentVariables: textToEnvVars(envVarsText) });
   }
 
   if (!settings) return <div className="settings-panel muted">Loading settings...</div>;
@@ -71,6 +101,41 @@ export function SettingsPanel() {
         <small className="muted field-hint">
           Lets the "From GitHub" chat option list and clone your own repos, and lets the Git tab
           push commits. Stored only in this app's local database on your PC - needs "repo" scope.
+        </small>
+      </label>
+
+      <div className="field-group-title">Standard environment</div>
+      <p className="muted field-hint">
+        Applies to every project automatically, the same idea as a cloud environment's setup script
+        - these variables are exported into every project's terminal and run commands, and the setup
+        script runs whenever you switch into a project.
+      </p>
+
+      <label className="field">
+        <span>Environment variables</span>
+        <textarea
+          className="field-textarea"
+          rows={4}
+          value={envVarsText}
+          placeholder={"API_KEY=sk-...\nNODE_ENV=development"}
+          onChange={(e) => setEnvVarsText(e.target.value)}
+          onBlur={saveEnvVars}
+        />
+        <small className="muted field-hint">One KEY=VALUE per line.</small>
+      </label>
+
+      <label className="field">
+        <span>Setup script</span>
+        <textarea
+          className="field-textarea"
+          rows={3}
+          value={settings.setupScript}
+          placeholder="npm install"
+          onChange={(e) => setSettings({ ...settings, setupScript: e.target.value })}
+          onBlur={() => save(settings)}
+        />
+        <small className="muted field-hint">
+          Runs in the terminal automatically every time you switch into a project.
         </small>
       </label>
 

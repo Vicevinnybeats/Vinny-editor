@@ -32,6 +32,7 @@ import { registerSocket } from "./ws-hub.js";
 import {
   getTerminalBuffer,
   resizeTerminal,
+  runSetupScriptIfConfigured,
   startTerminalIfNeeded,
   writeTerminalInput,
 } from "./terminal.js";
@@ -53,6 +54,7 @@ function ensureActiveProject() {
   const active = projects.find((p) => p.id === getActiveProjectId()) ?? projects[0];
   setWorkspaceRoot(active.path);
   if (getActiveProjectId() !== active.id) setActiveProjectId(active.id);
+  runSetupScriptIfConfigured();
 }
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
