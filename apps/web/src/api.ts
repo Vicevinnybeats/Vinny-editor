@@ -45,6 +45,12 @@ export const fsApi = {
     request<{ path: string; content: string }>(`/fs/file?path=${encodeURIComponent(path)}`),
   write: (path: string, content: string) =>
     request<{ ok: true }>("/fs/file", { method: "PUT", body: JSON.stringify({ path, content }) }),
+  upload: (path: string, file: File | Blob) =>
+    request<{ ok: true }>(`/fs/upload?path=${encodeURIComponent(path)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: file,
+    }),
 };
 
 export const tabsApi = {

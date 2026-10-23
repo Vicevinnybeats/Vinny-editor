@@ -1,15 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import type { FileEntry } from "@vinny-editor/shared";
 import { fsApi } from "../api";
 
 interface FileAttachMenuProps {
   onSelect: (path: string) => void;
+  onUpload: (file: File) => void;
   onClose: () => void;
 }
 
-export function FileAttachMenu({ onSelect, onClose }: FileAttachMenuProps) {
+export function FileAttachMenu({ onSelect, onUpload, onClose }: FileAttachMenuProps) {
   const [entries, setEntries] = useState<FileEntry[] | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fsApi.tree("").then((res) => setEntries(res.entries));
@@ -23,9 +25,21 @@ export function FileAttachMenu({ onSelect, onClose }: FileAttachMenuProps) {
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [onClose]);
 
+  function handleFilesChosen(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files;
+    if (files) {
+      for (const file of Array.from(files)) onUpload(file);
+    }
+    event.target.value = "";
+  }
+
   return (
     <div className="file-attach-menu" ref={rootRef}>
       <div className="file-attach-menu-title">Attach a file</div>
+      <button className="file-attach-upload" onClick={() => fileInputRef.current?.click()}>
+        ⬆ Upload from this device (documents, photos, video, music...)
+      </button>
+      <input ref={fileInputRef} type="file" multiple hidden onChange={handleFilesChosen} />
       {entries === null ? (
         <p className="muted">Loading...</p>
       ) : entries.length === 0 ? (

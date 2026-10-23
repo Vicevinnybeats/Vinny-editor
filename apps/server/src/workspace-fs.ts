@@ -81,3 +81,12 @@ export async function writeWorkspaceFile(relPath: string, content: string): Prom
   await mkdir(dirname(abs), { recursive: true });
   await writeFileAsync(abs, content, "utf8");
 }
+
+/** Writes raw bytes rather than text - used for uploads (photos, video,
+ * audio, PDFs, ...) where treating the content as a utf8 string would
+ * corrupt it. */
+export async function writeWorkspaceFileBinary(relPath: string, data: Buffer): Promise<void> {
+  const abs = resolveSafePath(relPath);
+  await mkdir(dirname(abs), { recursive: true });
+  await writeFileAsync(abs, data);
+}

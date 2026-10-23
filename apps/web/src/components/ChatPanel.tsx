@@ -27,6 +27,39 @@ function useElapsedSeconds(active: boolean): number {
 
 const STICK_TO_BOTTOM_THRESHOLD_PX = 80;
 
+// Qwen 3 is a text model - it can't see images or hear audio/video, so
+// there's no point stuffing their raw bytes into the prompt (and reading
+// them as utf8 text would just produce garbage anyway). They're still
+// genuinely saved into the project; the model is just told they exist.
+const BINARY_EXTENSIONS = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".bmp",
+  ".ico",
+  ".mp4",
+  ".mov",
+  ".avi",
+  ".mkv",
+  ".webm",
+  ".mp3",
+  ".wav",
+  ".flac",
+  ".ogg",
+  ".m4a",
+  ".pdf",
+  ".zip",
+  ".rar",
+  ".7z",
+]);
+
+function isBinaryPath(path: string): boolean {
+  const dot = path.lastIndexOf(".");
+  return dot !== -1 && BINARY_EXTENSIONS.has(path.slice(dot).toLowerCase());
+}
+
 /** Keeps the chat scrolled to the bottom as content grows - including growth
  * that happens after the fact, like a diff card's Monaco editor finishing its
  * async load and expanding taller. Stops following once the user scrolls up
@@ -79,6 +112,16 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
     setPickerOpen(false);
   }
 
+  async function uploadAndAttach(file: File) {
+    const path = `uploads/${file.name}`;
+    try {
+      await fsApi.upload(path, file);
+      attachFile(path);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Upload failed.");
+    }
+  }
+
   function removeAttachment(path: string) {
     setAttachedFiles((prev) => prev.filter((p) => p !== path));
   }
@@ -94,6 +137,9 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
     try {
       const attachments = await Promise.all(
         files.map(async (path) => {
+          if (isBinaryPath(path)) {
+            return `Attached: ${path} (binary file saved in the project - not shown as text here)`;
+          }
           const { content: fileContent } = await fsApi.file(path);
           return `Attached: ${path}\n\`\`\`\n${fileContent}\n\`\`\``;
         }),
@@ -159,7 +205,11 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
       </div>
       <div className="chat-input-area">
         {pickerOpen && (
-          <FileAttachMenu onSelect={attachFile} onClose={() => setPickerOpen(false)} />
+          <FileAttachMenu
+            onSelect={attachFile}
+            onUpload={uploadAndAttach}
+            onClose={() => setPickerOpen(false)}
+          />
         )}
         {attachedFiles.length > 0 && (
           <div className="chat-attachments">

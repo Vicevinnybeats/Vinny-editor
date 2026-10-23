@@ -57,7 +57,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const WEB_DIST = join(__dirname, "../../web/dist");
 
 export function buildServer() {
-  const fastify = Fastify({ logger: true });
+  // Default is 1 MB - too small for an uploaded photo/video/audio file.
+  const fastify = Fastify({ logger: true, bodyLimit: 200 * 1024 * 1024 });
 
   ensureActiveProject();
 

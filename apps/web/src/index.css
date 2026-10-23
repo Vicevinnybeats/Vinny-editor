@@ -736,6 +736,22 @@ textarea {
   color: var(--text-muted);
   padding: 4px 8px 6px;
 }
+.file-attach-upload {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--accent);
+  padding: 7px 8px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+.file-attach-upload:hover {
+  border-color: var(--accent);
+}
 
 .action-summary {
   display: flex;

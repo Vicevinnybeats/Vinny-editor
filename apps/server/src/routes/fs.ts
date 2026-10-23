@@ -6,6 +6,7 @@ import {
   listDir,
   readWorkspaceFile,
   writeWorkspaceFile,
+  writeWorkspaceFileBinary,
 } from "../workspace-fs.js";
 import { broadcast } from "../ws-hub.js";
 
@@ -13,6 +14,26 @@ const pathQuerySchema = z.object({ path: z.string().default("") });
 const writeBodySchema = z.object({ path: z.string(), content: z.string() });
 
 export async function fsRoutes(fastify: FastifyInstance) {
+  // Uploads (photos, video, audio, PDFs, ...) are sent as raw bytes, not
+  // JSON - the default parser would try to utf8-decode them and corrupt
+  // the content.
+  fastify.addContentTypeParser(
+    "application/octet-stream",
+    { parseAs: "buffer" },
+    (_request, body, done) => done(null, body),
+  );
+
+  fastify.put("/upload", async (request, reply) => {
+    const { path } = pathQuerySchema.parse(request.query);
+    try {
+      await writeWorkspaceFileBinary(path, request.body as Buffer);
+      broadcast({ type: "fs:changed", path });
+      reply.send({ ok: true });
+    } catch (err) {
+      handleFsError(err, reply);
+    }
+  });
+
   fastify.get("/tree", async (request, reply) => {
     const { path } = pathQuerySchema.parse(request.query);
     try {
