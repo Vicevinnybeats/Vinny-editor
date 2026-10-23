@@ -205,11 +205,7 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
       </div>
       <div className="chat-input-area">
         {pickerOpen && (
-          <FileAttachMenu
-            onSelect={attachFile}
-            onUpload={uploadAndAttach}
-            onClose={() => setPickerOpen(false)}
-          />
+          <FileAttachMenu onUpload={uploadAndAttach} onClose={() => setPickerOpen(false)} />
         )}
         {attachedFiles.length > 0 && (
           <div className="chat-attachments">
