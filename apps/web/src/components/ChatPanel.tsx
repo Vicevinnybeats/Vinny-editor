@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
+import { useEffect, useRef, useState, type DragEvent, type FormEvent, type RefObject } from "react";
 import {
   EDIT_BLOCK_PATTERN,
   RUN_BLOCK_PATTERN,
@@ -103,6 +103,7 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
   const [sending, setSending] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<string[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const innerRef = useStickToBottom(listRef);
   const draftRef = useRef<HTMLTextAreaElement>(null);
@@ -136,6 +137,23 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
 
   function removeAttachment(path: string) {
     setAttachedFiles((prev) => prev.filter((p) => p !== path));
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>) {
+    if (!event.dataTransfer.types.includes("Files")) return;
+    event.preventDefault();
+    setDragActive(true);
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragActive(false);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragActive(false);
+    for (const file of Array.from(event.dataTransfer.files)) void uploadAndAttach(file);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -210,7 +228,13 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
           })}
         </div>
       </div>
-      <div className="chat-input-area">
+      <div
+        className={`chat-input-area${dragActive ? " chat-input-area-drag-active" : ""}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {dragActive && <div className="chat-drop-overlay">Drop to attach</div>}
         {pickerOpen && (
           <FileAttachMenu onUpload={uploadAndAttach} onClose={() => setPickerOpen(false)} />
         )}

@@ -681,6 +681,24 @@ textarea {
   margin: 0 auto;
   flex-shrink: 0;
 }
+.chat-input-area-drag-active .chat-input-row textarea {
+  border-color: var(--accent);
+}
+.chat-drop-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-sunken);
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 5;
+}
 .chat-input-row {
   display: flex;
   align-items: flex-end;
