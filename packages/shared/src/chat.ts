@@ -66,3 +66,33 @@ export function parseProposedCommands(content: string): ProposedCommand[] {
   }
   return commands;
 }
+
+/**
+ * The assistant proposes splitting a subfolder of the current project into
+ * its own brand-new project (a fresh GitHub repo, pushed, added as a new
+ * chat) with a fenced block:
+ *
+ *   ```vinny-new-project:relative/subfolder/path
+ *   optional-new-project-name
+ *   ```
+ *
+ * The name line is optional - leave it blank to derive the name from the
+ * folder itself. Same approval rules as edits/commands.
+ */
+export const NEW_PROJECT_BLOCK_PATTERN = /```vinny-new-project:(.+)\n([\s\S]*?)\n```/g;
+
+export interface ProposedNewProject {
+  sourcePath: string;
+  name: string | null;
+}
+
+export function parseProposedNewProjects(content: string): ProposedNewProject[] {
+  const items: ProposedNewProject[] = [];
+  for (const match of content.matchAll(NEW_PROJECT_BLOCK_PATTERN)) {
+    const sourcePath = match[1].trim();
+    if (!sourcePath) continue;
+    const name = match[2].trim();
+    items.push({ sourcePath, name: name || null });
+  }
+  return items;
+}

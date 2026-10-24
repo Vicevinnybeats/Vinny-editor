@@ -152,6 +152,11 @@ export const projectsApi = {
       method: "PUT",
       body: JSON.stringify({ port }),
     }),
+  split: (sourcePath: string, name: string | null) =>
+    request<{ project: Project }>("/projects/split", {
+      method: "POST",
+      body: JSON.stringify({ sourcePath, name }),
+    }),
 };
 
 export interface GithubRepo {

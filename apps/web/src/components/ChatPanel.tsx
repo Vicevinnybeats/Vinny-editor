@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type DragEvent, type FormEvent, type RefObject } from "react";
 import {
   EDIT_BLOCK_PATTERN,
+  NEW_PROJECT_BLOCK_PATTERN,
   RUN_BLOCK_PATTERN,
   parseProposedCommands,
   parseProposedEdits,
+  parseProposedNewProjects,
 } from "@vinny-editor/shared";
 import { chatApi, fsApi } from "../api";
 import { useConnection } from "../connection";
@@ -198,15 +200,18 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
             const edits = message.role === "assistant" ? parseProposedEdits(message.content) : [];
             const commands =
               message.role === "assistant" ? parseProposedCommands(message.content) : [];
+            const newProjects =
+              message.role === "assistant" ? parseProposedNewProjects(message.content) : [];
             const text = message.content
               .replace(EDIT_BLOCK_PATTERN, "")
               .replace(RUN_BLOCK_PATTERN, "")
+              .replace(NEW_PROJECT_BLOCK_PATTERN, "")
               .trim();
             return (
               <div key={message.id} className={`chat-message chat-message-${message.role}`}>
                 <div className="chat-message-role">{message.role === "user" ? "You" : "Vinny"}</div>
                 {text && <div className="chat-message-body">{text}</div>}
-                {(edits.length > 0 || commands.length > 0) && (
+                {(edits.length > 0 || commands.length > 0 || newProjects.length > 0) && (
                   <button className="action-summary" onClick={onViewChanges}>
                     {edits.map((edit) => (
                       <span key={edit.path} className="action-summary-item">
@@ -218,6 +223,12 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
                       <span key={i} className="action-summary-item">
                         <span className="action-summary-verb">Ran</span>
                         <code className="action-summary-path">{command.command}</code>
+                      </span>
+                    ))}
+                    {newProjects.map((item, i) => (
+                      <span key={i} className="action-summary-item">
+                        <span className="action-summary-verb">Split into new project</span>
+                        <code className="action-summary-path">{item.sourcePath}</code>
                       </span>
                     ))}
                     <span className="action-summary-link">View in Changes ›</span>

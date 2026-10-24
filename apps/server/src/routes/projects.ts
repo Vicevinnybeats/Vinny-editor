@@ -13,11 +13,17 @@ import {
   setActiveProjectId,
   setProjectPreviewPort,
 } from "../db.js";
-import { CloneError, cloneRepo, createRepo, initAndPushNewRepo } from "../github.js";
+import {
+  CloneError,
+  cloneRepo,
+  createRepo,
+  initAndPushNewRepo,
+  splitFolderIntoNewRepo,
+} from "../github.js";
 import { restartTerminal, runSetupScriptIfConfigured } from "../terminal.js";
 import { restartWorkspaceWatcher } from "../watcher.js";
 import { broadcast } from "../ws-hub.js";
-import { setWorkspaceRoot } from "../workspace-fs.js";
+import { PathTraversalError, resolveSafePath, setWorkspaceRoot } from "../workspace-fs.js";
 
 const addBodySchema = z.object({ name: z.string().min(1), path: z.string().min(1) });
 const cloneBodySchema = z.object({
@@ -28,6 +34,10 @@ const cloneBodySchema = z.object({
 const switchBodySchema = z.object({ id: z.string() });
 const idParamSchema = z.object({ id: z.string() });
 const previewPortBodySchema = z.object({ port: z.number().int().positive().nullable() });
+const splitBodySchema = z.object({
+  sourcePath: z.string().min(1),
+  name: z.string().nullable().optional(),
+});
 
 function broadcastProjects() {
   broadcast({
@@ -123,6 +133,51 @@ export async function projectsRoutes(fastify: FastifyInstance) {
     }
     await activateProject(id);
     reply.send({ projects: listProjects(), activeProjectId: id });
+  });
+
+  fastify.post("/split", async (request, reply) => {
+    const { sourcePath, name } = splitBodySchema.parse(request.body);
+
+    let resolved: string;
+    try {
+      resolved = resolveSafePath(sourcePath);
+    } catch (err) {
+      reply.code(400).send({
+        error: err instanceof PathTraversalError ? err.message : "Invalid path",
+      });
+      return;
+    }
+
+    let stats;
+    try {
+      stats = statSync(resolved);
+    } catch {
+      reply.code(400).send({ error: "That folder doesn't exist in this project." });
+      return;
+    }
+    if (!stats.isDirectory()) {
+      reply.code(400).send({ error: "That path isn't a folder." });
+      return;
+    }
+
+    const token = getSettings().githubToken;
+    if (!token) {
+      reply.code(400).send({
+        error: "Add a GitHub personal access token in Settings first to split off a new project.",
+      });
+      return;
+    }
+
+    try {
+      const split = await splitFolderIntoNewRepo(resolved, name ?? null, token);
+      const project = addProject(split.name, split.path, split.htmlUrl);
+      await activateProject(project.id);
+      reply.send({ project });
+    } catch (err) {
+      reply.code(400).send({
+        error: err instanceof CloneError ? err.message : "Couldn't split that folder off.",
+      });
+    }
   });
 
   fastify.put("/:id/preview-port", async (request, reply) => {

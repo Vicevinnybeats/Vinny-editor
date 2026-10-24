@@ -1,6 +1,7 @@
 import { exec } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { cp } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
 import { simpleGit } from "simple-git";
 import { env } from "./env.js";
 
@@ -147,6 +148,38 @@ export async function initAndPushNewRepo(
       sanitizeMessage(err instanceof Error ? err.message : "Couldn't set up git for this project."),
     );
   }
+}
+
+/** Copies a subfolder of an existing project into a brand-new managed
+ * folder (the same place a clone or a "Local folder" project lives), turns
+ * it into its own git repo, creates a matching GitHub repo, and pushes it -
+ * the whole "split this subfolder into its own project" flow in one call.
+ * The original subfolder is left untouched in the source project; this
+ * only ever copies out of it, never deletes from it. */
+export async function splitFolderIntoNewRepo(
+  sourceAbsPath: string,
+  name: string | null,
+  token: string,
+): Promise<{ name: string; path: string; htmlUrl: string }> {
+  const projectName = sanitizeName(name?.trim() || basename(sourceAbsPath));
+  const destination = uniqueDestination(projectName);
+
+  try {
+    await cp(sourceAbsPath, destination, {
+      recursive: true,
+      filter: (src) => basename(src) !== ".git",
+    });
+  } catch (err) {
+    throw new CloneError(
+      err instanceof Error
+        ? `Couldn't copy that folder: ${err.message}`
+        : "Couldn't copy that folder.",
+    );
+  }
+
+  const repo = await createRepo(projectName, token, true);
+  await initAndPushNewRepo(destination, repo.cloneUrl, token);
+  return { name: projectName, path: destination, htmlUrl: repo.htmlUrl };
 }
 
 /** Clones a git repo (GitHub or otherwise) over HTTPS into a managed folder

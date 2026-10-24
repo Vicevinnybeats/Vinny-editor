@@ -1,8 +1,14 @@
 import type { ReactNode } from "react";
-import { parseProposedCommands, parseProposedEdits, type ChatMessage } from "@vinny-editor/shared";
+import {
+  parseProposedCommands,
+  parseProposedEdits,
+  parseProposedNewProjects,
+  type ChatMessage,
+} from "@vinny-editor/shared";
 import { useConnection } from "../connection";
 import { CommandApproval } from "./CommandApproval";
 import { DiffApproval } from "./DiffApproval";
+import { NewProjectApproval } from "./NewProjectApproval";
 
 function collectItems(chatMessages: ChatMessage[]): ReactNode[] {
   const items: ReactNode[] = [];
@@ -15,6 +21,10 @@ function collectItems(chatMessages: ChatMessage[]): ReactNode[] {
     parseProposedCommands(message.content).forEach((command, i) => {
       const id = `${message.id}-cmd-${i}`;
       items.push(<CommandApproval key={id} id={id} command={command} />);
+    });
+    parseProposedNewProjects(message.content).forEach((item, i) => {
+      const id = `${message.id}-newproject-${i}`;
+      items.push(<NewProjectApproval key={id} id={id} item={item} />);
     });
   }
   return items;
