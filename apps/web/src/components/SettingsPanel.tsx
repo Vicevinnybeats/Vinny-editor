@@ -74,6 +74,24 @@ export function SettingsPanel() {
         />
       </label>
 
+      <label className="field">
+        <span>Context window (tokens)</span>
+        <input
+          type="number"
+          min={2048}
+          step={1024}
+          value={settings.ollamaContextSize}
+          onChange={(e) => setSettings({ ...settings, ollamaContextSize: Number(e.target.value) })}
+          onBlur={() => save(settings)}
+        />
+        <small className="muted field-hint">
+          How much of the conversation Vinny can actually see at once. Ollama defaults to a small
+          window regardless of what the model supports - too small and it "forgets" earlier
+          instructions as the chat grows, especially once it's written a few edits. Higher uses more
+          RAM/VRAM; lower it if replies get slow or Ollama runs out of memory.
+        </small>
+      </label>
+
       <label className="field field-checkbox">
         <input
           type="checkbox"

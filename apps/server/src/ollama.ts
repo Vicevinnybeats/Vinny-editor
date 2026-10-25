@@ -10,12 +10,25 @@ interface OllamaChatChunk {
   done: boolean;
 }
 
-/** Streams content deltas from Ollama's /api/chat, which yields NDJSON. */
-export async function* streamOllamaChat(messages: OllamaMessage[]): AsyncGenerator<string> {
+/** Streams content deltas from Ollama's /api/chat, which yields NDJSON.
+ * contextSize is passed as num_ctx - without it, Ollama defaults to a small
+ * context window regardless of what the model itself supports, and silently
+ * truncates older messages once the conversation (edits embed full file
+ * contents, so this grows fast) exceeds it. */
+export async function* streamOllamaChat(
+  messages: OllamaMessage[],
+  model: string,
+  contextSize: number,
+): AsyncGenerator<string> {
   const response = await fetch(`${env.OLLAMA_BASE_URL}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: env.OLLAMA_MODEL, messages, stream: true }),
+    body: JSON.stringify({
+      model,
+      messages,
+      stream: true,
+      options: { num_ctx: contextSize },
+    }),
   });
 
   if (!response.ok || !response.body) {

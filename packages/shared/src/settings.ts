@@ -3,6 +3,13 @@ import { z } from "zod";
 export const settingsSchema = z.object({
   theme: z.enum(["light", "dark", "system"]).default("system"),
   ollamaModel: z.string().default("qwen3"),
+  // Ollama defaults to a small context window (often 2048-4096 tokens)
+  // unless a request explicitly asks for more. Since every proposed edit
+  // embeds a file's full contents in the chat history, that default gets
+  // blown past after just a couple of edits, and Ollama silently drops the
+  // oldest part of the conversation instead of erroring - which looks
+  // exactly like "it forgets everything I said". Larger uses more RAM/VRAM.
+  ollamaContextSize: z.number().int().positive().default(32768),
   autoApproveEdits: z.boolean().default(true),
   autoCommitAndPush: z.boolean().default(true),
   githubToken: z.string().default(""),

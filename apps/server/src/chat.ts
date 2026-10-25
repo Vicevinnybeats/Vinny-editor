@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { ChatMessage } from "@vinny-editor/shared";
 import {
   getActiveProjectId,
+  getSettings,
   insertChatMessage,
   listChatMessages,
   listEnabledSkills,
@@ -80,9 +81,14 @@ async function runAssistantReply(assistantId: string, projectId: string | null):
     ...history.map((m) => ({ role: m.role, content: m.content }) satisfies OllamaMessage),
   ];
 
+  const settings = getSettings();
   let full = "";
   try {
-    for await (const delta of streamOllamaChat(messages)) {
+    for await (const delta of streamOllamaChat(
+      messages,
+      settings.ollamaModel,
+      settings.ollamaContextSize,
+    )) {
       full += delta;
       broadcast({ type: "chat:delta", id: assistantId, delta, projectId });
     }
