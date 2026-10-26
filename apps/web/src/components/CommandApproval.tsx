@@ -43,7 +43,9 @@ export function CommandApproval({ id, command }: { id: string; command: Proposed
 
   const verb =
     status === "done"
-      ? `Ran command (exit ${result?.exitCode ?? "?"})`
+      ? result
+        ? `Ran command (exit ${result.exitCode ?? "?"})`
+        : "Ran command (output not kept after reload)"
       : status === "running"
         ? "Running command..."
         : status === "rejected"
@@ -70,12 +72,19 @@ export function CommandApproval({ id, command }: { id: string; command: Proposed
         )}
         {status === "error" && <span className="diff-status diff-status-error">Failed to run</span>}
       </div>
-      {expanded && result && (
+      {expanded && status === "done" && (
         <pre className="action-card-output">
-          {result.stdout}
-          {result.stderr}
-          {result.timedOut && "\n(command timed out)"}
-          {!result.stdout && !result.stderr && !result.timedOut && "(no output)"}
+          {result ? (
+            <>
+              {result.stdout}
+              {result.stderr}
+              {result.timedOut && "\n(command timed out)"}
+              {!result.stdout && !result.stderr && !result.timedOut && "(no output)"}
+            </>
+          ) : (
+            "(this ran in an earlier session - its output wasn't saved, only that it ran. " +
+            "Check the project's Terminal or Preview tab to see current results.)"
+          )}
         </pre>
       )}
     </div>
