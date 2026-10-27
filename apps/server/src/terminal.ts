@@ -1,9 +1,46 @@
 import * as pty from "node-pty";
-import { getSettings } from "./db.js";
+import {
+  getActiveProjectId,
+  getSettings,
+  listChatMessages,
+  listProjects,
+  setProjectPreviewPort,
+} from "./db.js";
 import { getWorkspaceRoot } from "./workspace-fs.js";
 import { broadcast } from "./ws-hub.js";
 
 const MAX_BUFFER_CHARS = 200_000;
+
+// Matches the port a dev server prints on startup across the common
+// frameworks' output styles, e.g. "http://localhost:3000",
+// "Local: http://localhost:5173/", "listening on 0.0.0.0:8080".
+const DEV_SERVER_PORT_PATTERN = /(?:localhost|127\.0\.0\.1|0\.0\.0\.0):(\d{2,5})\b/;
+
+/** When a dev server started by the user (manually, via a setup script, or
+ * by Vinny itself with a vinny-run block) prints the port it's listening
+ * on, pick it up automatically and wire it into the Preview tab - so
+ * "npm run dev" is the only thing anyone, human or Vinny, ever has to
+ * actually run. Only fills in a port that isn't already set, so it never
+ * overrides a port the user picked on purpose. */
+function maybeDetectPreviewPort(chunk: string): void {
+  const match = DEV_SERVER_PORT_PATTERN.exec(chunk);
+  if (!match) return;
+  const port = Number(match[1]);
+
+  const projectId = getActiveProjectId();
+  if (!projectId) return;
+  const project = listProjects().find((p) => p.id === projectId);
+  if (!project || project.previewPort === port) return;
+  if (project.previewPort !== null) return;
+
+  setProjectPreviewPort(projectId, port);
+  broadcast({
+    type: "projects:changed",
+    projects: listProjects(),
+    activeProjectId: getActiveProjectId(),
+    chatHistory: listChatMessages(getActiveProjectId()),
+  });
+}
 
 let ptyProcess: pty.IPty | null = null;
 let outputBuffer = "";
@@ -41,6 +78,7 @@ function ensureTerminal(): pty.IPty | null {
   ptyProcess.onData((data) => {
     appendToBuffer(data);
     broadcast({ type: "terminal:output", data });
+    maybeDetectPreviewPort(data);
   });
 
   ptyProcess.onExit(() => {

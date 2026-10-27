@@ -164,12 +164,15 @@ export function SettingsPanel() {
           className="field-textarea"
           rows={3}
           value={settings.setupScript}
-          placeholder="npm install"
+          placeholder="npm install && npm run dev"
           onChange={(e) => setSettings({ ...settings, setupScript: e.target.value })}
           onBlur={() => save(settings)}
         />
         <small className="muted field-hint">
-          Runs in the terminal automatically every time you switch into a project.
+          Runs in the terminal automatically every time you switch into a project - put your dev
+          server command here too (e.g. "npm install && npm run dev") so it starts itself every
+          time, without you or Vinny having to type it. The port it prints on startup is picked up
+          automatically for the Preview tab.
         </small>
       </label>
 
