@@ -173,6 +173,15 @@ export function insertChatMessage(message: ChatMessage, projectId: string | null
   ).run(message.id, message.role, message.content, message.createdAt, projectId);
 }
 
+/** Wipes this project's conversation only - its files and GitHub repo are
+ * untouched. The main way to recover from a chat that's grown so long
+ * (every file edit embeds the whole new file content) that Ollama has to
+ * re-process a huge prompt before every reply, which is what actually makes
+ * long-running projects feel like they've "slowed down". */
+export function clearChatMessages(projectId: string | null): void {
+  db.prepare("DELETE FROM chat_messages WHERE project_id IS ?").run(projectId);
+}
+
 export function clearTabs(): void {
   db.prepare("DELETE FROM tabs").run();
 }

@@ -94,6 +94,10 @@ export const chatErrorSchema = z.object({
   message: z.string(),
   projectId: z.string().nullable(),
 });
+export const chatClearedSchema = z.object({
+  type: z.literal("chat:cleared"),
+  projectId: z.string().nullable(),
+});
 
 export const serverMessageSchema = z.discriminatedUnion("type", [
   stateSnapshotSchema,
@@ -107,6 +111,7 @@ export const serverMessageSchema = z.discriminatedUnion("type", [
   chatDeltaSchema,
   chatDoneSchema,
   chatErrorSchema,
+  chatClearedSchema,
 ]);
 export type ServerMessage = z.infer<typeof serverMessageSchema>;
 

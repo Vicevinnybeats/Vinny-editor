@@ -112,6 +112,7 @@ export const chatApi = {
       method: "POST",
       body: JSON.stringify({ content }),
     }),
+  clear: () => request<{ ok: true }>("/chat/history", { method: "DELETE" }),
 };
 
 export interface CommandResult {

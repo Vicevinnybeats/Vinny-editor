@@ -44,6 +44,7 @@ type Action =
   | { kind: "chatDelta"; id: string; delta: string; projectId: string | null }
   | { kind: "chatDone"; id: string; projectId: string | null }
   | { kind: "chatError"; id: string; message: string; projectId: string | null }
+  | { kind: "chatCleared"; projectId: string | null }
   | {
       kind: "projects";
       projects: Project[];
@@ -113,6 +114,9 @@ function reducer(state: ConnectionState, action: Action): ConnectionState {
           m.id === action.id ? { ...m, content: `Error: ${action.message}`, pending: false } : m,
         ),
       };
+    case "chatCleared":
+      if (action.projectId !== state.activeProjectId) return state;
+      return { ...state, chatMessages: [] };
     case "projects":
       return {
         ...state,
@@ -211,6 +215,9 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
               message: msg.message,
               projectId: msg.projectId,
             });
+            break;
+          case "chat:cleared":
+            dispatch({ kind: "chatCleared", projectId: msg.projectId });
             break;
           case "fs:changed":
             for (const cb of fsListeners.current) cb(msg.path);

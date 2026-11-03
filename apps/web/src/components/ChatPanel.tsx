@@ -158,6 +158,17 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
     for (const file of Array.from(event.dataTransfer.files)) void uploadAndAttach(file);
   }
 
+  async function handleNewChat() {
+    if (isStreaming) return;
+    const ok = window.confirm(
+      "Start a new chat? This clears the conversation so far so Vinny has less to re-read on " +
+        "every reply (useful if replies have gotten slow). Your project's files and GitHub repo " +
+        "are not touched.",
+    );
+    if (!ok) return;
+    await chatApi.clear();
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if ((!draft.trim() && attachedFiles.length === 0) || sending) return;
@@ -185,7 +196,18 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
 
   return (
     <div className="chat-panel">
-      <div className="panel-title">Chat</div>
+      <div className="panel-title-row">
+        <div className="panel-title">Chat</div>
+        <button
+          type="button"
+          className="btn btn-small"
+          onClick={() => void handleNewChat()}
+          disabled={isStreaming || chatMessages.length === 0}
+          title="Clear this project's conversation - files and GitHub repo are untouched"
+        >
+          New chat
+        </button>
+      </div>
       <div className="chat-progress">{isStreaming && <div className="chat-progress-bar" />}</div>
       {isStreaming && (
         <div className="chat-status">
