@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  EDIT_BLOCK_PATTERN,
   parseProposedCommands,
   parseProposedEdits,
   parseProposedNewProjects,
@@ -80,7 +81,17 @@ npm run dev
 \`\`\`"
 
 If a task is too large for one reply, say so and then do as much of it as you can with real blocks
-in this same reply anyway - a partial real edit is useful, a checklist is not.`;
+in this same reply anyway - a partial real edit is useful, a checklist is not.
+
+Also: never emit more than one edit block for the same file path in a single reply. If you need to
+revise a file again, that's a new message - repeating the same file's block over and over in one
+reply does not get applied more than once, just wastes time generating it and makes the Changes
+list impossible to read. If you catch yourself about to write the same path a second time in this
+reply, stop and move on to the next file instead.
+
+Before any blocks, always write one or two plain sentences saying what you're about to do and why
+- never send a reply that's nothing but code blocks back to back with no explanation. The user
+needs to be able to tell what happened without opening every file.`;
 
 // Generation keeps running on the server even if every browser tab
 // disconnects - it isn't tied to the HTTP request or the websocket, so
@@ -136,6 +147,49 @@ function hasActionBlock(content: string): boolean {
   );
 }
 
+/** Small local models can get stuck in a loop re-emitting the exact same
+ * edit block for the same file over and over for the rest of a reply -
+ * wasting the time it takes to generate dozens of duplicate full-file
+ * blocks, and (since auto-approve applies every block it sees) triggering
+ * a separate write+commit+push for each one. Counts how many edit blocks
+ * target each path so a runaway loop can be caught early. */
+function maxEditRepeatsForAnyPath(content: string): number {
+  const counts = new Map<string, number>();
+  for (const match of content.matchAll(EDIT_BLOCK_PATTERN)) {
+    const path = match[1];
+    counts.set(path, (counts.get(path) ?? 0) + 1);
+  }
+  return Math.max(0, ...counts.values());
+}
+
+const REPEAT_LOOP_THRESHOLD = 4;
+
+/** Collapses repeated edit blocks for the same path down to just the last
+ * one, wherever they occur in the message - whether that's a genuine
+ * runaway loop or the model just revising the same file a few times in one
+ * reply, only the final version matters. Keeps the Changes tab (and what
+ * gets applied/committed) to one card per path instead of one per attempt. */
+function dedupeRepeatedEditBlocks(content: string): string {
+  const matches = [...content.matchAll(EDIT_BLOCK_PATTERN)];
+  if (matches.length < 2) return content;
+
+  const lastIndexForPath = new Map<string, number>();
+  matches.forEach((m, i) => lastIndexForPath.set(m[1], i));
+
+  let result = "";
+  let cursor = 0;
+  matches.forEach((m, i) => {
+    const matchStart = m.index ?? 0;
+    result += content.slice(cursor, matchStart);
+    if (lastIndexForPath.get(m[1]) === i) {
+      result += m[0];
+    }
+    cursor = matchStart + m[0].length;
+  });
+  result += content.slice(cursor);
+  return result;
+}
+
 const NUDGE_MESSAGE =
   "You just described what still needs doing instead of doing it. Don't explain, don't ask me " +
   "to run anything, and don't summarize next steps - actually write the real vinny-edit / " +
@@ -158,6 +212,7 @@ async function runAssistantReply(assistantId: string, projectId: string | null):
   // (or we've already given it one extra try).
   const controller = new AbortController();
   activeGenerations.set(assistantId, controller);
+  let loopDetected = false;
 
   let messages = baseMessages;
   let full = "";
@@ -173,6 +228,16 @@ async function runAssistantReply(assistantId: string, projectId: string | null):
         )) {
           attemptFull += delta;
           broadcast({ type: "chat:delta", id: assistantId, delta, projectId });
+
+          // Check only when a block just closed, not on every token - cheap
+          // enough to run on the whole buffer each time.
+          if (
+            delta.includes("```") &&
+            maxEditRepeatsForAnyPath(attemptFull) > REPEAT_LOOP_THRESHOLD
+          ) {
+            loopDetected = true;
+            controller.abort();
+          }
         }
       } catch (err) {
         if (controller.signal.aborted) {
@@ -205,10 +270,18 @@ async function runAssistantReply(assistantId: string, projectId: string | null):
   }
 
   if (controller.signal.aborted) {
-    const stoppedNote = "\n\n*(stopped by user)*";
+    const stoppedNote = loopDetected
+      ? "\n\n*(stopped automatically - Vinny got stuck re-editing the same file over and over)*"
+      : "\n\n*(stopped by user)*";
     full += stoppedNote;
     broadcast({ type: "chat:delta", id: assistantId, delta: stoppedNote, projectId });
   }
+
+  // Whether from the loop-detector above or just the model revising the
+  // same file more than once in one reply, only the last version of each
+  // edit matters - keeps the Changes tab (and what gets applied/committed)
+  // to one card per path instead of one per repeat.
+  full = dedupeRepeatedEditBlocks(full);
 
   const assistantMessage: ChatMessage = {
     id: assistantId,
@@ -217,5 +290,5 @@ async function runAssistantReply(assistantId: string, projectId: string | null):
     createdAt: new Date().toISOString(),
   };
   insertChatMessage(assistantMessage, projectId);
-  broadcast({ type: "chat:done", id: assistantId, projectId });
+  broadcast({ type: "chat:done", id: assistantId, content: full, projectId });
 }

@@ -86,6 +86,12 @@ export const chatDeltaSchema = z.object({
 export const chatDoneSchema = z.object({
   type: z.literal("chat:done"),
   id: z.string(),
+  // The final content, which can differ from what was streamed via
+  // chat:delta (e.g. repeated edit blocks for the same file get collapsed
+  // down to one before saving) - lets the client replace its accumulated
+  // streamed text with the actual saved version instead of showing stale
+  // duplicates until the next reload.
+  content: z.string(),
   projectId: z.string().nullable(),
 });
 export const chatErrorSchema = z.object({

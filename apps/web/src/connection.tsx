@@ -42,7 +42,7 @@ type Action =
   | { kind: "tabs"; tabs: Tab[] }
   | { kind: "chatMessage"; message: ChatMessage; projectId: string | null }
   | { kind: "chatDelta"; id: string; delta: string; projectId: string | null }
-  | { kind: "chatDone"; id: string; projectId: string | null }
+  | { kind: "chatDone"; id: string; content: string; projectId: string | null }
   | { kind: "chatError"; id: string; message: string; projectId: string | null }
   | { kind: "chatCleared"; projectId: string | null }
   | {
@@ -100,10 +100,15 @@ function reducer(state: ConnectionState, action: Action): ConnectionState {
     }
     case "chatDone":
       if (action.projectId !== state.activeProjectId) return state;
+      // Replaces the streamed-together content with the final saved
+      // version rather than just unflagging pending - they can differ
+      // (e.g. repeated edit blocks for the same file get collapsed down
+      // to one before saving), and without this the client would keep
+      // showing the raw streamed duplicates until the next reload.
       return {
         ...state,
         chatMessages: state.chatMessages.map((m) =>
-          m.id === action.id ? { ...m, pending: false } : m,
+          m.id === action.id ? { ...m, content: action.content, pending: false } : m,
         ),
       };
     case "chatError":
@@ -206,7 +211,12 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
             });
             break;
           case "chat:done":
-            dispatch({ kind: "chatDone", id: msg.id, projectId: msg.projectId });
+            dispatch({
+              kind: "chatDone",
+              id: msg.id,
+              content: msg.content,
+              projectId: msg.projectId,
+            });
             break;
           case "chat:error":
             dispatch({
