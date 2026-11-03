@@ -109,7 +109,8 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
   const listRef = useRef<HTMLDivElement>(null);
   const innerRef = useStickToBottom(listRef);
   const draftRef = useRef<HTMLTextAreaElement>(null);
-  const isStreaming = sending || chatMessages.some((m) => m.pending);
+  const pendingMessage = chatMessages.find((m) => m.pending);
+  const isStreaming = sending || !!pendingMessage;
   const elapsed = useElapsedSeconds(isStreaming);
 
   // Grows the input to fit what's typed or pasted (up to a cap set in CSS),
@@ -169,6 +170,11 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
     await chatApi.clear();
   }
 
+  async function handleStop() {
+    if (!pendingMessage) return;
+    await chatApi.stop(pendingMessage.id);
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if ((!draft.trim() && attachedFiles.length === 0) || sending) return;
@@ -213,6 +219,14 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
         <div className="chat-status">
           <ThinkingIndicator />
           <span className="chat-status-elapsed">{elapsed}s</span>
+          <button
+            type="button"
+            className="btn btn-small chat-stop-btn"
+            onClick={() => void handleStop()}
+            disabled={!pendingMessage}
+          >
+            Stop
+          </button>
         </div>
       )}
       <div className="chat-messages" ref={listRef}>

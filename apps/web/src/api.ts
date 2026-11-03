@@ -113,6 +113,11 @@ export const chatApi = {
       body: JSON.stringify({ content }),
     }),
   clear: () => request<{ ok: true }>("/chat/history", { method: "DELETE" }),
+  stop: (assistantId: string) =>
+    request<{ stopped: boolean }>("/chat/stop", {
+      method: "POST",
+      body: JSON.stringify({ assistantId }),
+    }),
 };
 
 export interface CommandResult {

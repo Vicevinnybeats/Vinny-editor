@@ -630,6 +630,9 @@ textarea {
 .chat-status-elapsed {
   color: var(--text-muted);
 }
+.chat-stop-btn {
+  margin-left: auto;
+}
 .chat-messages {
   flex: 1;
   overflow-y: auto;

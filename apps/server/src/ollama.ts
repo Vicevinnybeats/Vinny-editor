@@ -19,6 +19,7 @@ export async function* streamOllamaChat(
   messages: OllamaMessage[],
   model: string,
   contextSize: number,
+  signal?: AbortSignal,
 ): AsyncGenerator<string> {
   const response = await fetch(`${env.OLLAMA_BASE_URL}/api/chat`, {
     method: "POST",
@@ -29,6 +30,7 @@ export async function* streamOllamaChat(
       stream: true,
       options: { num_ctx: contextSize },
     }),
+    signal,
   });
 
   if (!response.ok || !response.body) {

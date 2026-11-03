@@ -82,6 +82,13 @@ npm run dev
 If a task is too large for one reply, say so and then do as much of it as you can with real blocks
 in this same reply anyway - a partial real edit is useful, a checklist is not.`;
 
+// Generation keeps running on the server even if every browser tab
+// disconnects - it isn't tied to the HTTP request or the websocket, so
+// closing the tab (or the phone locking) never loses a reply in progress.
+// This map exists only so a Stop button can reach back into a generation
+// that's still running and cancel it.
+const activeGenerations = new Map<string, AbortController>();
+
 export function sendUserMessage(content: string): {
   userMessage: ChatMessage;
   assistantId: string;
@@ -96,6 +103,17 @@ export function sendUserMessage(content: string): {
   void runAssistantReply(assistantId, projectId);
 
   return { userMessage, assistantId };
+}
+
+/** Stops a reply that's still being generated. Whatever it had written so
+ * far is kept and saved as-is (marked as stopped), rather than thrown away -
+ * a partial edit is still worth having. Returns false if that reply has
+ * already finished or doesn't exist. */
+export function stopAssistantReply(assistantId: string): boolean {
+  const controller = activeGenerations.get(assistantId);
+  if (!controller) return false;
+  controller.abort();
+  return true;
 }
 
 /** Skills are standing instructions the user has added once and that apply
@@ -138,40 +156,58 @@ async function runAssistantReply(assistantId: string, projectId: string | null):
   // appended to the prompt - invisibly, under the same streamed bubble - and
   // only persist/finalize once we have a reply that actually does something
   // (or we've already given it one extra try).
+  const controller = new AbortController();
+  activeGenerations.set(assistantId, controller);
+
   let messages = baseMessages;
   let full = "";
-  for (let attempt = 0; attempt < 2; attempt++) {
-    let attemptFull = "";
-    try {
-      for await (const delta of streamOllamaChat(
-        messages,
-        settings.ollamaModel,
-        settings.ollamaContextSize,
-      )) {
-        attemptFull += delta;
-        broadcast({ type: "chat:delta", id: assistantId, delta, projectId });
+  try {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      let attemptFull = "";
+      try {
+        for await (const delta of streamOllamaChat(
+          messages,
+          settings.ollamaModel,
+          settings.ollamaContextSize,
+          controller.signal,
+        )) {
+          attemptFull += delta;
+          broadcast({ type: "chat:delta", id: assistantId, delta, projectId });
+        }
+      } catch (err) {
+        if (controller.signal.aborted) {
+          full += attemptFull;
+          break;
+        }
+        broadcast({
+          type: "chat:error",
+          id: assistantId,
+          message: err instanceof Error ? err.message : "Ollama request failed",
+          projectId,
+        });
+        return;
       }
-    } catch (err) {
-      broadcast({
-        type: "chat:error",
-        id: assistantId,
-        message: err instanceof Error ? err.message : "Ollama request failed",
-        projectId,
-      });
-      return;
+
+      full += attemptFull;
+      if (attempt === 1 || hasActionBlock(attemptFull)) break;
+
+      messages = [
+        ...baseMessages,
+        { role: "assistant", content: attemptFull },
+        { role: "user", content: NUDGE_MESSAGE },
+      ];
+      const sep = "\n\n";
+      full += sep;
+      broadcast({ type: "chat:delta", id: assistantId, delta: sep, projectId });
     }
+  } finally {
+    activeGenerations.delete(assistantId);
+  }
 
-    full += attemptFull;
-    if (attempt === 1 || hasActionBlock(attemptFull)) break;
-
-    messages = [
-      ...baseMessages,
-      { role: "assistant", content: attemptFull },
-      { role: "user", content: NUDGE_MESSAGE },
-    ];
-    const sep = "\n\n";
-    full += sep;
-    broadcast({ type: "chat:delta", id: assistantId, delta: sep, projectId });
+  if (controller.signal.aborted) {
+    const stoppedNote = "\n\n*(stopped by user)*";
+    full += stoppedNote;
+    broadcast({ type: "chat:delta", id: assistantId, delta: stoppedNote, projectId });
   }
 
   const assistantMessage: ChatMessage = {
