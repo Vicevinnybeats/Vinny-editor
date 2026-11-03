@@ -842,6 +842,10 @@ textarea {
   min-height: 0;
   flex: 1;
 }
+.changes-show-earlier {
+  margin: 0 14px 10px;
+  align-self: flex-start;
+}
 .changes-list {
   display: flex;
   flex-direction: column;
