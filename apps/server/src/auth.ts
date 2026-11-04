@@ -57,6 +57,7 @@ export function clearSessionCookie(reply: FastifyReply) {
 }
 
 export function isRequestAuthed(request: FastifyRequest): boolean {
+  if (env.AUTH_DISABLED) return true;
   return verifySessionToken(request.cookies[COOKIE_NAME]);
 }
 

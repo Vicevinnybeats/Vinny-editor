@@ -18,6 +18,11 @@ const envSchema = z.object({
   DATABASE_PATH: z.string().default("./data/vinny-editor.sqlite"),
   WORKSPACE_ROOT: z.string().default("./workspace"),
   AUTH_PASSPHRASE: z.string().default("change-me"),
+  // Off by default - this app is usually reached over a public tunnel URL,
+  // so skipping the login screen means anyone who ever gets that link can
+  // open it and run commands on this PC, not just view code. Only turn
+  // this on deliberately, understanding that.
+  AUTH_DISABLED: z.coerce.boolean().default(false),
   SESSION_SECRET: z.string().default("change-me-too"),
   OLLAMA_BASE_URL: z.string().default("http://127.0.0.1:11434"),
   OLLAMA_MODEL: z.string().default("qwen3"),
