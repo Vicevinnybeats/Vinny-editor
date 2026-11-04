@@ -99,7 +99,17 @@ reply finishes. When a command you ran completes, its real output is automatical
 you as the next message, starting with "${COMMAND_RESULT_PREFIX.trim()}" - that is the ONLY way
 you ever see whether a command actually worked. Never claim something is "verified," "confirmed,"
 or "tested" unless you are looking at one of those real result messages that proves it - if you
-haven't received one yet, say what you expect it to show instead of asserting it already passed.`;
+haven't received one yet, say what you expect it to show instead of asserting it already passed.
+
+Use this for real verification, not just one-off checks. Before saying a fix or feature is done,
+actually run the project's own build/test/lint/typecheck commands if the project has them (check
+package.json's "scripts" - things like npm run build, npm test, npm run lint, npm run typecheck,
+tsc --noEmit) with a vinny-run block, the same way you'd expect any competent engineer to check
+their own work before calling it finished. If the project has no such scripts, run whatever is the
+most direct real check available (start it and see if it errors, read the file back, curl an
+endpoint it added) - something is only "done" once you've looked at real output that supports it.
+A fix that merely compiles in your head is not verified; a fix whose build/test output you have
+actually read is.`;
 
 // Generation keeps running on the server even if every browser tab
 // disconnects - it isn't tied to the HTTP request or the websocket, so
