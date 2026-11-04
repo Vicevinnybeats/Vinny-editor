@@ -18,7 +18,14 @@ export default defineConfig(({ mode }) => {
           description: "Personal AI code editor, powered by Qwen 3.",
           theme_color: "#0f1115",
           background_color: "#0f1115",
+          // "fullscreen" hides everything, including the OS status bar -
+          // Android/Chrome honors it. "standalone" (still no browser
+          // address bar, just the status bar) is the fallback for browsers
+          // that don't support fullscreen. iOS ignores this whole field and
+          // goes by the apple-mobile-web-app-* meta tags in index.html
+          // instead.
           display: "standalone",
+          display_override: ["fullscreen", "standalone"],
           start_url: "/",
           icons: [
             { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
