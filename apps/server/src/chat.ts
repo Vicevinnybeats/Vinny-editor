@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import {
   COMMAND_RESULT_PREFIX,
   EDIT_BLOCK_PATTERN,
+  RUN_BLOCK_PATTERN,
   parseProposedCommands,
   parseProposedEdits,
   parseProposedNewProjects,
@@ -298,6 +299,33 @@ function dedupeRepeatedEditBlocks(content: string): string {
   return result;
 }
 
+/** Same idea as dedupeRepeatedEditBlocks, for vinny-run: an identical
+ * command repeated verbatim in one reply (e.g. the model pastes the same
+ * "npm rebuild ..." block twice) just runs it redundantly - collapse to one
+ * occurrence. Unlike edits, this is keyed on the exact command text, not a
+ * path, since two different commands are two different real actions and
+ * should both stay. */
+function dedupeRepeatedRunBlocks(content: string): string {
+  const matches = [...content.matchAll(RUN_BLOCK_PATTERN)];
+  if (matches.length < 2) return content;
+
+  const lastIndexForCommand = new Map<string, number>();
+  matches.forEach((m, i) => lastIndexForCommand.set(m[1].trim(), i));
+
+  let result = "";
+  let cursor = 0;
+  matches.forEach((m, i) => {
+    const matchStart = m.index ?? 0;
+    result += content.slice(cursor, matchStart);
+    if (lastIndexForCommand.get(m[1].trim()) === i) {
+      result += m[0];
+    }
+    cursor = matchStart + m[0].length;
+  });
+  result += content.slice(cursor);
+  return result;
+}
+
 const NUDGE_MESSAGE =
   "You just described what still needs doing instead of doing it. Don't explain, don't ask me " +
   "to run anything, and don't summarize next steps - actually write the real vinny-edit / " +
@@ -390,6 +418,7 @@ async function runAssistantReply(assistantId: string, projectId: string | null):
   // edit matters - keeps the Changes tab (and what gets applied/committed)
   // to one card per path instead of one per repeat.
   full = dedupeRepeatedEditBlocks(full);
+  full = dedupeRepeatedRunBlocks(full);
 
   const assistantMessage: ChatMessage = {
     id: assistantId,
