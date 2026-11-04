@@ -57,6 +57,13 @@ export interface ProposedCommand {
   command: string;
 }
 
+// Marks a synthetic chat message that reports a command's real output back
+// to Vinny automatically, rather than something the user actually typed -
+// without this, Vinny never sees whether a command it ran actually worked,
+// which is exactly how it ends up claiming things are "verified" when
+// they're not. Rendered with a distinct label in the UI instead of "You".
+export const COMMAND_RESULT_PREFIX = "[auto: real command output]\n";
+
 export function parseProposedCommands(content: string): ProposedCommand[] {
   const commands: ProposedCommand[] = [];
   for (const match of content.matchAll(RUN_BLOCK_PATTERN)) {

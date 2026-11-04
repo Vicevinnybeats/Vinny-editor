@@ -28,7 +28,9 @@ function collectItems(chatMessages: ChatMessage[]): ReactNode[] {
     }
     parseProposedCommands(message.content).forEach((command, i) => {
       const id = `${message.id}-cmd-${i}`;
-      items.push(<CommandApproval key={id} id={id} command={command} />);
+      items.push(
+        <CommandApproval key={id} id={id} messageId={message.id} index={i} command={command} />,
+      );
     });
     parseProposedNewProjects(message.content).forEach((item, i) => {
       const id = `${message.id}-newproject-${i}`;

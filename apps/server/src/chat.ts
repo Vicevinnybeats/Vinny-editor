@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  COMMAND_RESULT_PREFIX,
   EDIT_BLOCK_PATTERN,
   parseProposedCommands,
   parseProposedEdits,
@@ -91,7 +92,14 @@ reply, stop and move on to the next file instead.
 
 Before any blocks, always write one or two plain sentences saying what you're about to do and why
 - never send a reply that's nothing but code blocks back to back with no explanation. The user
-needs to be able to tell what happened without opening every file.`;
+needs to be able to tell what happened without opening every file.
+
+You cannot see the result of a vinny-run command the instant you emit it - it runs after your
+reply finishes. When a command you ran completes, its real output is automatically sent back to
+you as the next message, starting with "${COMMAND_RESULT_PREFIX.trim()}" - that is the ONLY way
+you ever see whether a command actually worked. Never claim something is "verified," "confirmed,"
+or "tested" unless you are looking at one of those real result messages that proves it - if you
+haven't received one yet, say what you expect it to show instead of asserting it already passed.`;
 
 // Generation keeps running on the server even if every browser tab
 // disconnects - it isn't tied to the HTTP request or the websocket, so
@@ -114,6 +122,96 @@ export function sendUserMessage(content: string): {
   void runAssistantReply(assistantId, projectId);
 
   return { userMessage, assistantId };
+}
+
+interface ReportedCommandResult {
+  index: number;
+  command: string;
+  exitCode: number | null;
+  stdout: string;
+  stderr: string;
+  timedOut: boolean;
+}
+
+// Collects real command results per assistant message as they come in from
+// the client (each CommandApproval reports its own once it actually runs),
+// so the feedback message below is sent once, with every command from that
+// reply included, not once per command.
+const pendingCommandReports = new Map<string, ReportedCommandResult[]>();
+
+const MAX_OUTPUT_CHARS = 4000;
+
+function truncate(text: string): string {
+  if (text.length <= MAX_OUTPUT_CHARS) return text;
+  return `${text.slice(0, MAX_OUTPUT_CHARS)}\n...(truncated, ${text.length - MAX_OUTPUT_CHARS} more characters)`;
+}
+
+function formatCommandResult(r: ReportedCommandResult): string {
+  const out = truncate(r.stdout.trim());
+  const err = truncate(r.stderr.trim());
+  return [
+    `$ ${r.command}`,
+    `exit code: ${r.exitCode ?? "(none - process may have been killed)"}${r.timedOut ? " (timed out)" : ""}`,
+    out ? `stdout:\n${out}` : null,
+    err ? `stderr:\n${err}` : null,
+    !out && !err ? "(no output)" : null,
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+}
+
+/** Called once per command, as each one actually finishes running. Once
+ * every command proposed in that message has reported in, sends their real
+ * combined output back to Vinny as a new message and lets it react - this
+ * is the only way Vinny ever finds out whether what it ran actually worked,
+ * instead of having to guess or claim it without evidence. Caps the
+ * resulting back-and-forth to one extra automatic reply (if the message
+ * being reported on was itself already a reaction to an earlier report,
+ * its own commands still run and get reported, but don't trigger yet
+ * another automatic reply - the human has to say "next" from there, same
+ * as any other reply, so this can never chain forever on its own). */
+export function reportCommandResult(
+  messageId: string,
+  index: number,
+  command: string,
+  result: { exitCode: number | null; stdout: string; stderr: string; timedOut: boolean },
+): void {
+  const projectId = getActiveProjectId();
+  const history = listChatMessages(projectId);
+  const msgIdx = history.findIndex((m) => m.id === messageId);
+  if (msgIdx === -1) return;
+
+  const expected = parseProposedCommands(history[msgIdx].content);
+  if (expected.length === 0) return;
+
+  const list = pendingCommandReports.get(messageId) ?? [];
+  if (!list.some((r) => r.index === index)) {
+    list.push({ index, command, ...result });
+  }
+  pendingCommandReports.set(messageId, list);
+  if (list.length < expected.length) return;
+
+  pendingCommandReports.delete(messageId);
+
+  const precedingUser = msgIdx > 0 ? history[msgIdx - 1] : null;
+  const isReaction =
+    precedingUser?.role === "user" && precedingUser.content.startsWith(COMMAND_RESULT_PREFIX);
+
+  const body = list
+    .sort((a, b) => a.index - b.index)
+    .map(formatCommandResult)
+    .join("\n\n");
+  const content = `${COMMAND_RESULT_PREFIX}Here is the real, actual output of the command(s) you just ran - not a prediction, this is what genuinely happened:\n\n${body}`;
+
+  const now = new Date().toISOString();
+  const userMessage: ChatMessage = { id: randomUUID(), role: "user", content, createdAt: now };
+  insertChatMessage(userMessage, projectId);
+  broadcast({ type: "chat:message", message: userMessage, projectId });
+
+  if (isReaction) return;
+
+  const assistantId = randomUUID();
+  void runAssistantReply(assistantId, projectId);
 }
 
 /** Stops a reply that's still being generated. Whatever it had written so

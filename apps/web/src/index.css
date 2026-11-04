@@ -677,6 +677,21 @@ textarea {
   white-space: pre-wrap;
   word-break: break-word;
 }
+.chat-message-command-result {
+  border-color: var(--border);
+  background: var(--bg-sunken);
+}
+.chat-message-command-result .chat-message-role {
+  color: var(--accent);
+}
+.chat-message-body-mono {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
 .chat-input-area {
   position: relative;
   max-width: 760px;

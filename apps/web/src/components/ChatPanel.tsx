@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type DragEvent, type FormEvent, type RefObject } from "react";
 import {
+  COMMAND_RESULT_PREFIX,
   EDIT_BLOCK_PATTERN,
   NEW_PROJECT_BLOCK_PATTERN,
   RUN_BLOCK_PATTERN,
@@ -238,15 +239,27 @@ export function ChatPanel({ onViewChanges }: { onViewChanges: () => void }) {
               message.role === "assistant" ? parseProposedCommands(message.content) : [];
             const newProjects =
               message.role === "assistant" ? parseProposedNewProjects(message.content) : [];
+            const isCommandResult =
+              message.role === "user" && message.content.startsWith(COMMAND_RESULT_PREFIX);
             const text = message.content
               .replace(EDIT_BLOCK_PATTERN, "")
               .replace(RUN_BLOCK_PATTERN, "")
               .replace(NEW_PROJECT_BLOCK_PATTERN, "")
+              .replace(COMMAND_RESULT_PREFIX, "")
               .trim();
             return (
-              <div key={message.id} className={`chat-message chat-message-${message.role}`}>
-                <div className="chat-message-role">{message.role === "user" ? "You" : "Vinny"}</div>
-                {text && <div className="chat-message-body">{text}</div>}
+              <div
+                key={message.id}
+                className={`chat-message chat-message-${message.role}${isCommandResult ? " chat-message-command-result" : ""}`}
+              >
+                <div className="chat-message-role">
+                  {isCommandResult ? "Real output" : message.role === "user" ? "You" : "Vinny"}
+                </div>
+                {text && (
+                  <div className={isCommandResult ? "chat-message-body-mono" : "chat-message-body"}>
+                    {text}
+                  </div>
+                )}
                 {(edits.length > 0 || commands.length > 0 || newProjects.length > 0) && (
                   <button className="action-summary" onClick={onViewChanges}>
                     {edits.map((edit) => (

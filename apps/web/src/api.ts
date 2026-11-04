@@ -118,6 +118,11 @@ export const chatApi = {
       method: "POST",
       body: JSON.stringify({ assistantId }),
     }),
+  reportCommandResult: (messageId: string, index: number, command: string, result: CommandResult) =>
+    request<{ ok: true }>("/chat/command-result", {
+      method: "POST",
+      body: JSON.stringify({ messageId, index, command, ...result }),
+    }),
 };
 
 export interface CommandResult {

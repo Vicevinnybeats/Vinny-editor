@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
 import type { ProposedCommand } from "@vinny-editor/shared";
-import { execApi, type CommandResult } from "../api";
+import { chatApi, execApi, type CommandResult } from "../api";
 import { markAutoApplied, wasAlreadyAutoApplied } from "../autoApproveGuard";
 import { useConnection } from "../connection";
 
-export function CommandApproval({ id, command }: { id: string; command: ProposedCommand }) {
+export function CommandApproval({
+  id,
+  messageId,
+  index,
+  command,
+}: {
+  id: string;
+  messageId: string;
+  index: number;
+  command: ProposedCommand;
+}) {
   const { settings } = useConnection();
   const autoApprove = settings?.autoApproveEdits ?? false;
   const alreadyApplied = wasAlreadyAutoApplied(id);
@@ -20,6 +30,9 @@ export function CommandApproval({ id, command }: { id: string; command: Proposed
       const res = await execApi.run(command.command);
       setResult(res);
       setStatus("done");
+      // Feeds the real output back to Vinny - without this it never finds
+      // out whether the command it asked to run actually worked.
+      void chatApi.reportCommandResult(messageId, index, command.command, res);
     } catch {
       setStatus("error");
     }
