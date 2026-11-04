@@ -1278,6 +1278,16 @@ textarea {
   font-size: 12px;
   resize: vertical;
 }
+.field-copy-row {
+  display: flex;
+  gap: 6px;
+}
+.field-copy-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+}
 .field-group-title {
   font-size: 11px;
   text-transform: uppercase;

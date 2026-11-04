@@ -23,10 +23,43 @@ function textToEnvVars(text: string): Record<string, string> {
   return vars;
 }
 
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Older browsers / non-secure contexts don't have navigator.clipboard -
+    // fall back to the old select-and-copy trick.
+    try {
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.focus();
+      el.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(el);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
 export function SettingsPanel() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
   const [envVarsText, setEnvVarsText] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  async function copyCurrentLink() {
+    const ok = await copyToClipboard(window.location.origin);
+    if (ok) {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1500);
+    }
+  }
 
   useEffect(() => {
     void settingsApi.get().then((s) => {
@@ -52,6 +85,20 @@ export function SettingsPanel() {
   return (
     <div className="settings-panel">
       <div className="panel-title">Settings</div>
+
+      <label className="field">
+        <span>Access link</span>
+        <div className="field-copy-row">
+          <input value={window.location.origin} readOnly onFocus={(e) => e.target.select()} />
+          <button type="button" className="btn btn-small" onClick={() => void copyCurrentLink()}>
+            {linkCopied ? "Copied!" : "Copy"}
+          </button>
+        </div>
+        <small className="muted field-hint">
+          Whatever address you're viewing this on right now, copied with one tap - handy for sending
+          it from your PC to your phone (or the other way around) without retyping it.
+        </small>
+      </label>
 
       <label className="field">
         <span>Theme</span>
