@@ -72,6 +72,15 @@ export async function stageFile(path: string): Promise<void> {
   await git().add([path]);
 }
 
+export async function stageAll(): Promise<void> {
+  await git().add(["-A"]);
+}
+
+export async function hasStagedChanges(): Promise<boolean> {
+  const status = await git().status();
+  return status.staged.length > 0;
+}
+
 export async function unstageFile(path: string): Promise<void> {
   await git().raw(["reset", "HEAD", "--", path]);
 }
