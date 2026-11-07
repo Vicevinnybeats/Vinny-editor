@@ -110,7 +110,20 @@ their own work before calling it finished. If the project has no such scripts, r
 most direct real check available (start it and see if it errors, read the file back, curl an
 endpoint it added) - something is only "done" once you've looked at real output that supports it.
 A fix that merely compiles in your head is not verified; a fix whose build/test output you have
-actually read is.`;
+actually read is.
+
+NEVER do this - writing a result and THEN the command that would supposedly produce it:
+"Exact output:
+\`\`\`json
+{ "status": "ok" }
+\`\`\`
+\`\`\`vinny-run
+npm test
+\`\`\`"
+That output was written before npm test ran, so it cannot be real - this exact pattern has caused
+real bugs to go unnoticed. If you haven't seen a real result message yet, don't write any output
+at all - just emit the command and stop. React to the result in your NEXT reply, once you've
+actually seen it.`;
 
 // Generation keeps running on the server even if every browser tab
 // disconnects - it isn't tied to the HTTP request or the websocket, so
@@ -331,6 +344,32 @@ const NUDGE_MESSAGE =
   "to run anything, and don't summarize next steps - actually write the real vinny-edit / " +
   "vinny-run / vinny-new-project blocks right now for the items you listed, in this same reply.";
 
+// The single most damaging failure mode observed: writing "Exact output: ..."
+// (or "Verified", "Confirmed", etc.) followed by the vinny-run block that
+// would supposedly have produced it - meaning the output was invented
+// before the command that's supposed to generate it had even run. This
+// matches that exact shape: a success/verification claim whose position in
+// the raw text comes BEFORE a vinny-run block later in the same message.
+const FABRICATED_VERIFICATION_PATTERN =
+  /\b(exact(?:\s+raw)?\s+(?:terminal\s+)?output|verified|confirmed|validation passed|all tests? pass(?:ed)?)\b/i;
+
+function claimsResultBeforeRunningIt(content: string): boolean {
+  const claimMatch = FABRICATED_VERIFICATION_PATTERN.exec(content);
+  if (!claimMatch) return false;
+  const claimIndex = claimMatch.index ?? 0;
+  for (const m of content.matchAll(RUN_BLOCK_PATTERN)) {
+    if ((m.index ?? 0) > claimIndex) return true;
+  }
+  return false;
+}
+
+const FABRICATION_NUDGE_MESSAGE =
+  "You just claimed a result (said something like 'exact output', 'verified', or 'confirmed') " +
+  "before the vinny-run block that would actually produce it - that output cannot be real, " +
+  "it was written before the command ran. Do not claim ANY result in this reply. Only emit the " +
+  "command(s) that need to run, with no claim about what they'll show - you'll see the real " +
+  "output in the next message, automatically, and can react to it then.";
+
 async function runAssistantReply(assistantId: string, projectId: string | null): Promise<void> {
   const history = listChatMessages(projectId);
   const baseMessages: OllamaMessage[] = [
@@ -390,12 +429,13 @@ async function runAssistantReply(assistantId: string, projectId: string | null):
       }
 
       full += attemptFull;
-      if (attempt === 1 || hasActionBlock(attemptFull)) break;
+      const fabricated = claimsResultBeforeRunningIt(attemptFull);
+      if (attempt === 1 || (hasActionBlock(attemptFull) && !fabricated)) break;
 
       messages = [
         ...baseMessages,
         { role: "assistant", content: attemptFull },
-        { role: "user", content: NUDGE_MESSAGE },
+        { role: "user", content: fabricated ? FABRICATION_NUDGE_MESSAGE : NUDGE_MESSAGE },
       ];
       const sep = "\n\n";
       full += sep;

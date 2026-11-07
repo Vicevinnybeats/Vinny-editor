@@ -51,7 +51,12 @@ export function parseProposedEdits(content: string): ProposedEdit[] {
  * Same rule as edits: the client shows it and requires explicit approval
  * before it actually runs - the model proposing a command never executes it.
  */
-export const RUN_BLOCK_PATTERN = /```vinny-run\n([\s\S]*?)\n```/g;
+// The optional ":anything" is tolerance for a real, observed model mistake -
+// copying the ":path" syntax from vinny-edit onto vinny-run (e.g.
+// "```vinny-run:npx tsx test.ts") even though a run block never takes one.
+// Without this, that entire block silently fails to parse and the command
+// never runs at all, which is worse than just ignoring the stray suffix.
+export const RUN_BLOCK_PATTERN = /```vinny-run(?::[^\n]*)?\n([\s\S]*?)\n```/g;
 
 export interface ProposedCommand {
   command: string;
